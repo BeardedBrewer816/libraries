@@ -6,3 +6,6 @@ OV7670
 TFTLCD
 SerialSRAM
 MCP23Sxx
+*.zip
+
+.DS_Store

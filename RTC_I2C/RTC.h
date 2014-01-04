@@ -146,12 +146,20 @@ public:
 
 
   static char * copyNameOfDay(char * buf, byte d) {
+#if defined(ARDUINO)
+	  strcpy_P(buf, NameOfDay + d * 4);
+#elif defined (ARMCMX)
 	  strcpy(buf, NameOfDay + d * 4);
+#endif
 	  return buf;
   }
 
   static char * copyNameOfMonth(char * buf, byte m) {
+#if defined(ARDUINO)
+	  strcpy_P(buf, NameOfMonth + ((m+11) % 12) * 4);
+#elif defined (ARMCMX)
 	  strcpy(buf, NameOfMonth + ((m+11) % 12) * 4);
+#endif
 	  return buf;
   }
 

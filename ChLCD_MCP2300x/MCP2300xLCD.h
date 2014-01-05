@@ -64,8 +64,10 @@ class MCP2300xLCD: public CharacterLCD {
 	uint8_t _rs_pin, _rw_pin, _enable_pin;
 	uint8_t _data_pins[4];
 	uint8_t _bklight_pin;
-/*
+
 	uint8_t _numcolumns;
+	uint8_t _numlines;
+	/*
 	uint8_t cursorRow, cursorColumn;
 */
 	void write4bits(uint8_t);

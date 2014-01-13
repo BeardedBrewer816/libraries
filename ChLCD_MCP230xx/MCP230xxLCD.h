@@ -16,7 +16,7 @@
 
 //#include "Print.h"
 #include "IOExpander.h"
-#include "MCP23009.h"
+#include "MCP230xx.h"
 
 #include "CharacterLCD.h"
 
@@ -59,8 +59,8 @@
 #define LCD_5x10DOTS 0x04
 #define LCD_5x8DOTS 0x00
 
-class MCP2300xLCD: public CharacterLCD {
-	MCP23009 xpander;
+class MCP230xxLCD: public CharacterLCD {
+	MCP230xx xpander;
 	uint8_t _rs_pin, _rw_pin, _enable_pin;
 	uint8_t _data_pins[4];
 	uint8_t _bklight_pin;
@@ -77,7 +77,7 @@ class MCP2300xLCD: public CharacterLCD {
 	void init_xtender();
 
 public:
-	MCP2300xLCD(uint8_t addr, uint8_t rs, uint8_t wr, uint8_t enable, uint8_t d0,
+	MCP230xxLCD(uint8_t addr, uint8_t rs, uint8_t wr, uint8_t enable, uint8_t d0,
 			uint8_t d1, uint8_t d2, uint8_t d3, uint8_t bklight = -1);
 //	~xLCD() {}
 

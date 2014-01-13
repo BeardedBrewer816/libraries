@@ -8,7 +8,7 @@
 #endif
 #include <Wire.h>
 //#include "PortExpander.h"
-#include "MCP23009.h"
+#include "MCP230xx.h"
 
 #ifdef ARDUINO >= 100
 	inline byte Wsend(byte v) { return Wire.write(v); }
@@ -19,12 +19,12 @@
 #endif
 
 
-MCP23009::MCP23009(uint8_t addr) {
+MCP230xx::MCP230xx(uint8_t addr) {
 	address = (DEFAULTADDR & 0b01111000) | (addr & 0x07);
 	comm_result = 0;
 }
 
-void MCP23009::init() {
+void MCP230xx::init() {
 	// the same as Power-On/Reset value
 	IOMode(0xff); // set IODIR, 0x00 = all output
 	polarity(0x00);
@@ -32,7 +32,7 @@ void MCP23009::init() {
 	pullup(0x00); // set no pull-ups
 }
 
-uint8_t MCP23009::send(const uint8_t reg, const uint8_t val) {
+uint8_t MCP230xx::send(const uint8_t reg, const uint8_t val) {
   Wire.beginTransmission(address);
   Wsend(reg); //Wire.send(reg);
   Wsend(val); //Wire.send(val);
@@ -40,7 +40,7 @@ uint8_t MCP23009::send(const uint8_t reg, const uint8_t val) {
 }
 
 // returns received value, set result in this->comm_result.
-uint8_t MCP23009::receive(const uint8_t reg) {
+uint8_t MCP230xx::receive(const uint8_t reg) {
   Wire.beginTransmission(address);
   Wsend(reg); //Wire.send(reg);
   comm_result = Wire.endTransmission();
@@ -50,7 +50,7 @@ uint8_t MCP23009::receive(const uint8_t reg) {
   return Wreceive(); //Wire.receive();
 }
 
-void MCP23009::pinMode(byte pin, byte mode) {
+void MCP230xx::pinMode(byte pin, byte mode) {
 	pin &= 0x07;
 	byte dir = IOMode();
 	IOMode( bitWrite(dir,pin,(mode == OUTPUT? IODIR_OUTPUT : IODIR_INPUT)  ) );

@@ -1,10 +1,10 @@
-#ifndef MCP23009_h
-#define MCP23009_h
+#ifndef _MCP230XX_H_
+#define _MCP230XX_H_
 
 #include <inttypes.h>
 #include "IOExpander.h"
 
-class MCP23009 : public IOExpander {
+class MCP230xx : public IOExpander {
 	enum { // constant
 		IODIR = 0x00,
 		IPOL = 0x01,
@@ -22,11 +22,9 @@ class MCP23009 : public IOExpander {
 	uint8_t comm_result;
 
 public:
-	MCP23009(const uint8_t addr = DEFAULTADDR);	
-//	MCP23009(void) { MCP23009(DEFAULTADDR); }
+	MCP230xx(const uint8_t addr = DEFAULTADDR);
+//	MCP230xx(void) { MCP230xx(DEFAULTADDR); }
 	void init();
-
-//	~MCP23009() {}
 
     byte send(const byte reg, const byte val);
 	byte receive(const byte reg);

@@ -81,4 +81,11 @@
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 		<nature>de.innot.avreclipse.core.avrnature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>libraries</name>
+			<type>2</type>
+			<location>/Applications/Arduino.app/Contents/Resources/Java/libraries</location>
+		</link>
+	</linkedResources>
 </projectDescription>

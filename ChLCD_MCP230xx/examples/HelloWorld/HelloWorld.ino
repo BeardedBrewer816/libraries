@@ -33,21 +33,28 @@
 // include the library code:
 #include <Wire.h>
 #include "IOExpander.h"
-#include "MCP23009.h"
-#include "xLCD.h"
+#include "MCP230xx.h"
+#include "CharacterLCD.h"
+#include "MCP230xxLCD.h"
 
 // initialize the library with the numbers of the interface pins
 // pin assignments for one of my LCD adapters
-xLCD lcd(0x07, 6,5,4,3,2,1,0, 7);
+MCP230xxLCD lcd(0x07, 0,1,2, 4,5,6,7, 3); //6,5,4,3,2,1,0, 7);
+//MCP230xxLCD lcd(0x00, 1, 0xff, 2, 3, 4, 5, 6, 7); // for adafruit i2c/spi lcd adapter
 
 void setup() {
   Wire.begin();
   // set up the LCD's number of rows and columns: 
-  lcd.begin(16, 2);
+  lcd.begin(20, 4);
   // Print a message to the LCD.
   lcd.backlightOn();
-  lcd.print("hello, world!");
-  delay(1000);
+  lcd.print("Hello, world!");
+  for(int i = 0; i < 3; i++) {
+    delay(750);
+    lcd.noDisplay();
+    delay(250);
+    lcd.display();
+  }
 }
 uint8_t c;
 void loop() {
@@ -58,6 +65,6 @@ void loop() {
   // (note: line 1 is the second row, since counting begins with 0):
   lcd.setCursor(0, 1);
   // print the number of seconds since reset:
-  lcd.print(millis()/100);
+  lcd.print(millis()/10);
 }
 

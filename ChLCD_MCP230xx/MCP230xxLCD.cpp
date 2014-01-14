@@ -67,35 +67,35 @@ void MCP230xxLCD::begin(uint8_t cols, uint8_t lines, uint8_t dotsize) {
 	
 	init_xtender();
 	
-	// SEE PAGE 45/46 FOR INITIALIZATION SPECIFICATION!
-	// according to datasheet, we need at least 40ms after power rises above 2.7V
-	// before sending commands. Arduino can turn on way befer 4.5V so we'll wait 50
-	delay(50); 
-	// Now we pull both RS and R/W low to begin commands
 	xpander.digitalWrite(_rs_pin, LOW);
 	xpander.digitalWrite(_enable_pin, LOW);
 	if (_rw_pin != 255) { 
 		xpander.digitalWrite(_rw_pin, LOW);
 	}
-	
+
+	// SEE PAGE 45/46 FOR INITIALIZATION SPECIFICATION!
+	// according to datasheet, we need at least 40ms after power rises above 2.7V
+	// before sending commands. Arduino can turn on way befer 4.5V so we'll wait 50
+	delay(50);
+	// Now we pull both RS and R/W low to begin commands
 	//put the LCD into 4 bit or 8 bit mode
 //	if (! (_displayfunction & LCD_8BITMODE)) {
 		// this is according to the hitachi HD44780 datasheet
 		// figure 24, pg 46
-		
+
 		// we start in 8bit mode, try to set 4 bit mode
 		write4bits(0x03);
-		delay(5); // wait min 4.1ms
-		
+		delayMicroseconds(4500); // wait min 4.1ms
+
 		// second try
 		write4bits(0x03);
-		delay(5); // wait min 4.1ms
+		delayMicroseconds(100); // wait min 4.1ms
 		
 		// third go!
 		write4bits(0x03); 
-		delayMicroseconds(150);
-		
-		// finally, set to 8-bit interface
+		//delayMicroseconds(150);
+
+		// finally, set to 4-bit interface
 		write4bits(0x02); 
 //	} 
 /*	else {

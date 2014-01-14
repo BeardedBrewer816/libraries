@@ -30,6 +30,10 @@
 							<builder buildPath="${workspace_loc:/xLCD/Debug}" id="de.innot.avreclipse.target.builder.winavr.app.debug.182688964" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="AVR GNU Make Builder"/>
 						</toolChain>
 					</folderInfo>
+					<sourceEntries>
+						<entry excluding="libraries" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="libraries"/>
+					</sourceEntries>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>

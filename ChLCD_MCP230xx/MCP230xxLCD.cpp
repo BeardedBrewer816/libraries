@@ -145,7 +145,7 @@ void MCP230xxLCD::send(uint8_t value, uint8_t mode) {
 		myGPIO &= ~((uint8_t) 1 << _rs_pin);
 	}
 	// if there is a RW pin indicated, set it low to Write
-	if (_rw_pin != -1) { 
+	if (_rw_pin != 0xff) {
 		myGPIO &= ~((uint8_t) 1 << _rw_pin);
 	}
 	xpander.write(myGPIO);

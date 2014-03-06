@@ -1,12 +1,3 @@
-RFID_RCS620S
-RFID_PN532
-RTC_I2C
-Adafruit_GFX
-IOInterface
-OV7670
-TFTLCD
-SerialSRAM
-MCP23Sxx
 *.zip
 *.doc
 

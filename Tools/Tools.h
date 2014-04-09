@@ -33,8 +33,8 @@ extern "C" {
 }
 #endif
 
-const static char endl = '\n';
-const static char cr = '\r';
+const static char NL = '\n';
+const static char CR = '\r';
 
 template<class T>
 inline Print & operator <<(Print &out, T arg) {

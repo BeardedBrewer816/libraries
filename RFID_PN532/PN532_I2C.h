@@ -191,7 +191,7 @@ public:
 	}
 
 
-	byte InListPassiveTarget(const byte maxtg, const byte BaudModType, byte * data, const byte initlen);
+	byte InListPassiveTarget(const byte maxtg, const byte BaudModType, const byte * data, const byte initlen);
 	byte InAutoPoll(const byte numop, const byte per, const byte * types,
 			const byte length);
 

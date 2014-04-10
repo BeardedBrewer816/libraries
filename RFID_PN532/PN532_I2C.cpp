@@ -12,6 +12,8 @@
 #endif
 #include "PN532_I2C.h"
 
+#include "Tools.h"
+
 #define PREAMBLE      (0x00)
 #define STARTCODE_1   (0x00)
 #define STARTCODE_2   (0xFF)
@@ -205,7 +207,7 @@ byte PN532::receivepacket() {
 	Serial.print("receivepacket Len = ");
 	Serial.print(n, DEC);
 	Serial.print(", ");
-	printBytes(packet, n + 7);
+	printBytes(Serial, packet, n + 7);
 	Serial.println();
 	Serial.print("xsum: ");
 	Serial.print(chksum, HEX);
@@ -330,7 +332,7 @@ boolean PN532::PowerDown(byte wkup, byte genirq) {
 	return true;
 }
 
-byte PN532::InListPassiveTarget(const byte maxtg, const byte brty, byte * data,
+byte PN532::InListPassiveTarget(const byte maxtg, const byte brty, const byte * data,
 		const byte length) {
 //	byte inidatalen = 0;
 	packet[0] = COMMAND_InListPassiveTarget;
@@ -341,7 +343,7 @@ byte PN532::InListPassiveTarget(const byte maxtg, const byte brty, byte * data,
 	}
 #ifdef PN532COMM
 	Serial.print("InListPassiveTarget << ");
-	printBytes(packet, length + 3);
+	printBytes(Serial, packet, length + 3);
 	Serial.println();
 #endif
 	sendpacket(3 + length);
@@ -368,7 +370,7 @@ byte PN532::InAutoPoll(const byte numop, const byte period, const byte * types,
 	memcpy(packet + 3, types, N);
 #ifdef PN532DEBUG
 	Serial.print("<< InAutoPoll ");
-	printBytes(packet, typeslen + 3);
+	printBytes(Serial, packet, typeslen + 3);
 	Serial.println(",\n");
 #endif
 	last_command = COMMAND_InAutoPoll;
@@ -396,7 +398,7 @@ byte PN532::getCommandResponse(byte * resp, const long & wmillis) {
 	byte count = receivepacket();
 #ifdef PN532COMM
 	Serial.print("CommandResp. >> ");
-	printBytes(packet, count);
+	printBytes(Serial, packet, count);
 	Serial.println('\n');
 #endif
 //#undef PN532DEBUG
@@ -470,7 +472,7 @@ byte PN532::InDataExchange(const byte Tg, const byte * data,
 	memcpy(packet + 2, data, length);
 
 #ifdef MIFAREDEBUG
-	printBytes(packet, length+2);
+	printBytes(Serial, packet, length+2);
 	Serial.println();
 #endif
 	sendpacket(length + 2);
@@ -518,7 +520,7 @@ byte PN532::InDataExchange(const byte Tg, const byte micmd, const byte blkaddr,
 
 #ifdef MIFAREDEBUG
 	Serial.print("Sending in InDataExchange: ");
-	printBytes(packet, datalen+4);
+	printBytes(Serial, packet, datalen+4);
 	Serial.println();
 #endif
 	sendpacket(datalen + 4);
@@ -605,7 +607,7 @@ byte PN532::mifare_ReadBlock(uint8_t blockNumber, uint8_t * data) {
 	if (! c) {
 #ifdef MIFAREDEBUG
 		Serial.println("Unexpected response");
-		printBytes(packet, 26);
+		printBytes(Serial, packet, 26);
 		Serial.println();
 #endif
 		return 0;
@@ -723,7 +725,7 @@ boolean PN532::InCommunicateThru(const byte * data, const byte len) {
 	Serial.print("count = ");
 	Serial.print(len + 1, DEC);
 	Serial.print(", ");
-	Serial.printBytes(packet, len + 2);
+	printBytes(Serial, packet, len + 2);
 	Serial.println("\n");
 #endif
 	/* Send the command */
@@ -751,7 +753,7 @@ byte PN532::felica_Polling(byte * resp, const word syscode) {
 	byte result = InCommunicateThru(resp, 5);
 	result = getCommunicateThruResponse(resp);
 #ifdef FELICADEBUG
-	Serial.printBytes(resp, result);
+	printBytes(Serial, resp, result);
   Serial.println();
 #endif
 	if (resp[0] == FELICA_CMD_POLLING + 1) {
@@ -777,7 +779,7 @@ byte PN532::getCommunicateThruResponse(byte * data) {
 	Serial.print("count = ");
 	Serial.print(count, DEC);
 	Serial.print(", ");
-	Serial.printBytes(packet, count);
+	printBytes(Serial, packet, count);
 	Serial.println('\n');
 #endif
 	if (packet[0] != 0) {
@@ -911,16 +913,6 @@ boolean PN532::WriteRegister(word addr, byte val) {
 	return 1;
 }
 
-/*
-void PN532::printBytes(uint8_t * p, size_t n) {
-  while ( n-- > 0 ) {
-    Serial.printBytes(*p++);
-    Serial.print(" ");
-  }
-  return;
-}
-*/
-
 byte PN532::mifare_WriteAccessConditions(uint8_t sector, uint32_t acc, const uint8_t keya[6], const uint8_t keyb[6]) {
 #if defined (ARDUINO)
 	int i;
@@ -944,7 +936,7 @@ byte PN532::mifare_WriteAccessConditions(uint8_t sector, uint32_t acc, const uin
 		Serial.print(' ');
 	}
 #elif defined (ARMCMX)
-	Serial.printBytes(data, 16);
+	printBytes(Serial, data, 16);
 #endif
       Serial.println();
       Serial.println("New acc. cond.");

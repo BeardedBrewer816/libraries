@@ -232,7 +232,6 @@ public:
   
   // utility function
   static void printAccessBits(uint8_t trailer[16]);
-  // void printBytes(uint8_t *, size_t);
 
 };
 

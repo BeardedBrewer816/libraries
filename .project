@@ -30,5 +30,10 @@
 			<type>2</type>
 			<location>/Applications/Arduino.app/Contents/Resources/Java/hardware/arduino/cores</location>
 		</link>
+		<link>
+			<name>Arduino_hardware_libraries</name>
+			<type>2</type>
+			<location>/Applications/Arduino.app/Contents/Resources/Java/libraries</location>
+		</link>
 	</linkedResources>
 </projectDescription>

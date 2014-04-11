@@ -44,5 +44,6 @@ inline Print & operator <<(Print &out, T arg) {
 
 size_t printBytes(Print & prn, const uint8_t * p, const uint8_t length, char sep = ' ');
 size_t printASCII(Print & prn, const uint8_t * p, const uint8_t length, char sep = ' ');
+size_t printByte(Print & prn, const uint8_t p);
 
 #endif /* _TOOLS_H_ */

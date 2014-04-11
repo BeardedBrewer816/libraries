@@ -5,15 +5,18 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
 ../Tools/RingBuffer.cpp \
-../Tools/StringBuffer.cpp 
+../Tools/StringBuffer.cpp \
+../Tools/Tools.cpp 
 
 OBJS += \
 ./Tools/RingBuffer.o \
-./Tools/StringBuffer.o 
+./Tools/StringBuffer.o \
+./Tools/Tools.o 
 
 CPP_DEPS += \
 ./Tools/RingBuffer.d \
-./Tools/StringBuffer.d 
+./Tools/StringBuffer.d \
+./Tools/Tools.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

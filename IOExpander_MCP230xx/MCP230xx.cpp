@@ -1,13 +1,11 @@
 /*
  */
-//#include <inttypes.h>
 #if ARDUINO >= 100
   #include "Arduino.h"
 #else
    #include "WPrograms.h"
 #endif
 #include <Wire.h>
-//#include "PortExpander.h"
 #include "MCP230xx.h"
 
 #ifdef ARDUINO >= 100

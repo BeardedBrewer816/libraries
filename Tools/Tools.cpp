@@ -27,6 +27,27 @@ size_t printBytes(Print & prn, const uint8_t * p, const uint8_t length, char sep
 	return n;
 }
 
+size_t printBits(Print & prn, const uint8_t * p, const uint8_t length, char sep) {
+	size_t n = 0;
+	int i = 0;
+	int bit, val;
+	while ( i < length ) {
+		val = *p;
+		for(bit = 7; bit >= 0; bit--) {
+			if ( val & 0x80 )
+				n += prn.print('1');
+			else
+				n += prn.print('0');
+			val <<= 1;
+		}
+		p++;
+		i += 8;
+		if ( i < length && sep )
+			n += prn.print(sep);
+	}
+	return n;
+}
+
 size_t printASCII(Print & prn, const uint8_t * p, const uint8_t length, char sep) {
 	size_t n = 0;
 	int i = 0;

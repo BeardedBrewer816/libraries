@@ -46,16 +46,19 @@ private:
 
 public:
 	MCP2301x(const int addr);
-	void init();
-	inline void begin() { init(); }
 
-    byte send(const byte reg, const byte val);
+private:
+	void init();
+
+	byte send(const byte reg, const byte val);
 	byte receive(const byte reg);
 
     byte send(const byte reg, const byte array[], const size_t n);
 	byte receive(const byte reg, byte array[], const size_t n);
 
 public:
+	inline void begin() { init(); }
+
 	byte read(const byte reg) { return receive(reg); }
 	word read16(const byte reg) {
 		byte a[2];
@@ -84,8 +87,8 @@ public:
 	inline byte gpioA(const byte val) { return write(GPIOA, val); }
 	inline byte gpioB(const byte val) { return write(GPIOB, val); }
 	inline word gpio16(const word val) { return write16(GPIOA, val); }
-
-	/*
+	void mode(const byte port, const byte io);
+/*
 	inline
 	byte read(const byte reg) { return receive(reg); }
 	byte read() { return read(GPIO); }

@@ -72,3 +72,11 @@ uint8_t MCP2301x::receive(const uint8_t reg, uint8_t array[], const size_t n) {
   }
   return commstate;
 }
+
+void MCP2301x::mode(const byte port, const byte io) {
+	if ( port & 1 ) {
+		write(IODIRB, (io == INPUT ? ALL_INPUT : ALL_OUTPUT));
+	} else {
+		write(IODIRA, (io == INPUT ? ALL_INPUT : ALL_OUTPUT));
+	}
+}

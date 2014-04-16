@@ -14,6 +14,10 @@ public:
 		IPOLA 	= 0x02,
 		IPOL 	= 0x02,
 		IPOLB 	= 0x03,
+		GPINTENA = 0x04,
+		GPINTENB = 0x05,
+		INTCONA = 0x08,
+		INTCONB = 0x09,
 		IOCON 	= 0x0A,  // or = 0x0B
 		GPPUA 	= 0x0C,
 		GPPU 	= 0x0C,
@@ -88,27 +92,7 @@ public:
 	inline byte gpioB(const byte val) { return write(GPIOB, val); }
 	inline word gpio16(const word val) { return write16(GPIOA, val); }
 	void mode(const byte port, const byte io);
-/*
-	inline
-	byte read(const byte reg) { return receive(reg); }
-	byte read() { return read(GPIO); }
-	inline
-	byte write(const byte val) { return send(GPIO, val); }
-	byte write(const byte addr, const byte val) { return send(addr, val); }
-	byte transfer(const byte val) {
-		byte res = read();
-		write(val);
-		return res;
-	}
-//	uint8_t gpio() { return read(GPIO); }
-	byte IOMode() { return read(IODIR); }
-	byte IOMode(const byte val) { return send(IODIR, val); }
-	void polarity(byte val) { send(IPOL, val); }
-	void config(byte val) { send(IOCON, val); }
-	byte pullup(const byte val) { return send(GPPU, val); }
 
-	void pinMode(byte pin, byte ArduinoIOmode);
-*/
 };
 
 #endif

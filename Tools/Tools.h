@@ -33,6 +33,8 @@ extern "C" {
 }
 #endif
 
+#include <Arduino.h>
+
 const static char NL = '\n';
 const static char CR = '\r';
 
@@ -42,9 +44,12 @@ inline Print & operator <<(Print &out, T arg) {
 	return out;
 }
 
-size_t printBytes(Print & prn, const uint8_t * p, const uint8_t length, char sep = ' ');
-size_t printBits(Print & prn, const uint8_t * p, const uint8_t length, char sep = ' ');
-size_t printASCII(Print & prn, const uint8_t * p, const uint8_t length, char sep = ' ');
-size_t printByte(Print & prn, const uint8_t p);
+size_t printBytes(Print & prn, const uint8_t * p, const uint8_t length, const uint8_t base = 16, const char sep = ' ');
+size_t printByte(Print & prn, const uint8_t val, const uint8_t base = 16);
+inline size_t printBits(Print & prn, const uint8_t *p, const uint8_t length) {
+	return printBytes(prn, p, length, 2, 0);
+}
+
+size_t readToken(Stream & stream, char buf[], const int maxlen, long timeout = 250);
 
 #endif /* _TOOLS_H_ */

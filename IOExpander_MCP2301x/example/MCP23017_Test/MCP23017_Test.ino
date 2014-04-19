@@ -4,7 +4,6 @@
 #include <MCP2301x.h>
 
 #include <Tools.h>
-#include "SX4000_keycodes.h"
 
 MCP2301x ioxt(4);
 long lastwatch = 0;

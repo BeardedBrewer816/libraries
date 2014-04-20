@@ -45,7 +45,7 @@ public:
 	 outcomp(ocrxa), tcnt(tcntx), toie(toiex), ocf(ocfxa) {
 	 clksel_value = 0;
 	 }
-	~TimerCounter() {}
+	//~TimerCounter() {}
 
 public:
 	static const byte TC0_WGM_CTC = 2;
@@ -69,7 +69,7 @@ public:
 	}
 
 	inline void restart() {
-		ClockSelect(cs_value);
+		ClockSelect(clksel_value);
 	}
 
 	void ClockSelect(byte csb) {
@@ -97,7 +97,7 @@ public:
 	byte counter(byte val) {
 		stop();
 		tcnt = val;
-		ClockSelect(cs_value);
+		restart();
 		return tcnt;
 	}
 
@@ -127,6 +127,7 @@ public:
 };
 
 class TimerCounter0: public TimerCounter {
+	// 8 bit
 public:
 	enum {
 		CS0x_STOP = 0,
@@ -151,6 +152,7 @@ public:
 };
 
 class TimerCounter2: public TimerCounter {
+	// 8 bit
 public:
 	enum {
 		CS2x_STOP = 0,

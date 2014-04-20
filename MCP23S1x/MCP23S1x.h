@@ -47,7 +47,7 @@ public:
 		pin_CS(cs), contbyte(CONTROL_FIXEDADDR | (CONTROL_USERADDRMASK & (addr<<1)) ) { }
 
 	inline void begin() { init(); }
-	inline void select() { digitalWrite(pin_CS, LOW); SPI.setClockDivider(SPI_CLOCK_DIV2); SPI.setDataMode(SPI_MODE0); }
+	inline void select() { digitalWrite(pin_CS, LOW); SPI.setClockDivider(SPI_CLOCK_DIV4); SPI.setDataMode(SPI_MODE0); }
 	inline void deselect() { digitalWrite(pin_CS, HIGH); }
 
 	uint8_t read(const uint8_t reg);

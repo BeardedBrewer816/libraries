@@ -40,6 +40,8 @@ public:
 		GPPUB = 0x0D,
 		GPIOA = 0x12,
 		GPIOB = 0x13,
+		OLATA = 0x14,
+		OLATB = 0x15,
 	};
 public:
 

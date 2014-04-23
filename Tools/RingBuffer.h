@@ -36,6 +36,8 @@ public:
 	virtual int peek() { return _buffer[_tail]; }
 	virtual void flush() { _head = _tail; }
 
+	int length(void) { return (_tail + _capa - _head) % _capa; }
+
     virtual size_t write(uint8_t);
     virtual size_t printTo(Print& p) const;
 

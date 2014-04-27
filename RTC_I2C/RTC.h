@@ -86,7 +86,7 @@ public:
 
 	enum {
 		MAXIM_DS1307 = 0,
-    MAXIM_DS3234 = 0,
+		MAXIM_DS3234 = 0,
 		ST_M41T62 = 1
 	};
 

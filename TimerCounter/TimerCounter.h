@@ -48,17 +48,11 @@ public:
 	//~TimerCounter() {}
 
 public:
-	static const byte TC0_WGM_CTC = 2;
-	static const byte TC2_WGM_CTC = 0b010;
 
 	void WaveGenerationMode(byte wgmx) {
 		bitWrite(tccra, 0, wgmx & 1);
 		bitWrite(tccra, 1, wgmx>>1 & 1);
 		bitWrite(tccrb, 3, wgmx>>2 & 1);
-	}
-
-	inline void CTCmode() {
-		WaveGenerationMode(TC0_WGM_CTC);
 	}
 
 	virtual void stop();
@@ -140,6 +134,8 @@ public:
 		CS0x_EXTRISING = 7
 	};
 
+	static const byte WGM_CTC = 2;
+
 	TimerCounter0() :
 		TimerCounter( byte(0), TCCR0A, TCCR0B, TCCR0A, TIMSK0, OCR0A, TCNT0,
 				byte(TOIE0), byte(OCF0A) ) {
@@ -164,6 +160,8 @@ public:
 		CS2x_DIV256 = 6,
 		CS2x_DIV1024 = 7,
 	};
+
+	static const byte WGM_CTC = 2;
 
 	TimerCounter2() :
 		 TimerCounter( byte(2), TCCR2A, TCCR2B, TCCR2A, TIMSK2, OCR2A, TCNT2,

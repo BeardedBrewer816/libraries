@@ -13,7 +13,7 @@
 #include "SPISRAM.h"
 
 SPISRAM::SPISRAM(const byte csPin, const byte addr_width) :
-		_csPin(csPin), _addrbus(addr_width), _writept(0), _readpt(0) {
+		_csPin(csPin), _addrbus(addr_width) {
 }
 
 void SPISRAM::init() {
@@ -23,18 +23,14 @@ void SPISRAM::init() {
 	select();
 	writeStatusRegister(SEQ_MODE);
 	deselect();
-	_writept = 0;
-	_readpt = 0;
 }
 
 byte SPISRAM::read(const long & address) {
 	byte data;
-	_readpt = address;
 	select();
-	set_access(READ, _readpt);
+	set_access(READ, address);
 	data = SPI.transfer(0);
 	deselect();
-	_readpt++;
 	return data;
 }
 
@@ -44,48 +40,29 @@ void SPISRAM::read(const long & address, byte *buffer, const long & size) {
 //	SPI.transfer(SEQ_MODE);
 	//
 	byte * p = buffer;
-	_readpt = address;
-	set_access(READ, _readpt);
+	set_access(READ, address);
 	for (unsigned int i = 0; i < size; i++)
 		*p++ = SPI.transfer(0);
 	deselect();
-	_readpt += size;
 }
 
 void SPISRAM::write(const long & address, byte data) {
-	_writept = address;
 	select();
-	set_access(WRITE, _writept);
+	set_access(WRITE, address);
 	SPI.transfer(data);
 	deselect();
-	_writept++;
 }
 
 void SPISRAM::write(const long & address, byte *buffer, const long & size) {
-	_writept = address;
 	select();
 //	SPI.transfer(WRSR);
 //	SPI.transfer(SEQ_MODE);
 	//
-	set_access(WRITE, _writept);
+	set_access(WRITE, address);
 	for (unsigned int i = 0; i < size; i++)
 		SPI.transfer(*buffer++);
 	deselect();
-	_writept += size;
 }
-
-int SPISRAM::available(void) {
-	if (_addrbus == 16 ) {
-		_writept &= 0xffff;
-		_readpt &= 0xffff;
-		return _writept - _readpt;
-	} else if (_addrbus == 24 ) {
-		_writept &= 0xffffffL;
-		_readpt &= 0xffffffL;
-		return _writept - _readpt;
-	}
-}
-
 
 void SPISRAM::setSPIMode(void) {
 	SPI.setBitOrder(MSBFIRST);

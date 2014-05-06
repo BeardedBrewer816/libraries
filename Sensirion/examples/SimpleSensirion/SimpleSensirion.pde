@@ -1,40 +1,38 @@
 /*
  * Query a SHT10 temperature and humidity sensor
  *
- * A simple example that queries the sensor every 3 seconds
+ * A simple example that queries the sensor every 5 seconds
  * and communicates the result over a serial connection.
  * Error handling is omitted in this example.
  */
 
-#include "Sensirion.h"
+#include <Sensirion.h>
 
-#define DATA_PIN  3
-#define SCK_PIN   2
+const uint8_t dataPin  =  2;
+const uint8_t clockPin =  3;
 
-int temperature;
-int humidity;
+float temperature;
+float humidity;
 float dewpoint;
 
-Sensirion tempSensor = Sensirion(DATA_PIN, SCK_PIN);
+Sensirion tempSensor = Sensirion(dataPin, clockPin);
 
-void setup() {
+void setup()
+{
   Serial.begin(9600);
-
-  Serial.print("Temperature: \t");
-  Serial.print("Humidity: \t");
-  //Serial.print(" %, Dewpoint: ");
-  Serial.println();
 }
 
 void loop()
 {
-  tempSensor.measure(&temperature, &humidity);
+  tempSensor.measure(&temperature, &humidity, &dewpoint);
+
+  Serial.print("Temperature: ");
+  Serial.print(temperature);
+  Serial.print(" C, Humidity: ");
+  Serial.print(humidity);
+  Serial.print(" %, Dewpoint: ");
+  Serial.print(dewpoint);
+  Serial.println(" C");
   
-  Serial.print((float)temperature/100);
-  Serial.print(" C\t\t");
-  Serial.print((float)humidity/100);
-  Serial.print(" %\t\t");
-  Serial.print(analogRead(2));
-  Serial.println();
-  delay(3000);  
+  delay(5000);  
 }

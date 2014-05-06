@@ -75,9 +75,10 @@ Sensirion::Sensirion(uint8_t dataPin, uint8_t clockPin) {
   // Initialize private storage for library functions
   _pinData = dataPin;
   _pinClock = clockPin;
-  _presult = NULL;                  // No pending measurement
+  _reqmode = 0; // No issued command //_presult = NULL;                  // No pending measurement
   _stat_reg = 0x00;                 // Sensor status register default state
 
+  _error = 0;
   // Initialize CLK signal direction
   // Note: All functions exit with CLK low and DAT in input mode
   pinMode(_pinClock, OUTPUT);
@@ -93,70 +94,75 @@ Sensirion::Sensirion(uint8_t dataPin, uint8_t clockPin) {
  ******************************************************************************/
 
 // All-in-one (blocking): Returns temperature, humidity, & dewpoint
-uint8_t Sensirion::measure(float *temp, float *humi, float *dew) {
-  uint16_t rawData;
-  uint8_t error;
-  if (error = measTemp(&rawData))
-    return error;
-  *temp = calcTemp(rawData);
-  if (error = measHumi(&rawData))
-    return error;
-  *humi = calcHumi(rawData, *temp);
-  *dew = calcDewpoint(*humi, *temp);
+uint8_t Sensirion::calculate(float *temp, float *humi, float *dew) {
+  if (!measure(TEMP))
+    return _error;
+  *temp = calcTemp();
+  if (!measure(HUMI))
+    return _error;
+  *humi = calcHumi();
+  *dew = calcDewpoint();
   return 0 ;
 }
 
-// Initiate measurement.  If blocking, wait for result
-uint8_t Sensirion::meas(uint8_t cmd, uint16_t *result, bool block) {
-  uint8_t error, i;
+// issume measurement request command
+bool Sensirion::measure(uint8_t cmd, bool wait) {
+	_error = 0;
 #ifdef CRC_ENA
   _crc = bitrev(_stat_reg & SR_MASK);  // Initialize CRC calculation
 #endif
   startTransmission();
   if (cmd == TEMP)
-    cmd = MEAS_TEMP;
+    _reqmode = MEAS_TEMP;
   else
-    cmd = MEAS_HUMI;
-  if (error = putByte(cmd))
-    return error;
+	_reqmode = MEAS_HUMI;
+  if ( putByte(_reqmode) )
+    return false;
 #ifdef CRC_ENA
-  calcCRC(cmd, &_crc);              // Include command byte in CRC calculation
+  calcCRC(_reqmode, &_crc);              // Include command byte in CRC calculation
 #endif
-  // If non-blocking, save pointer to result and return
-  if (!block) {
-    _presult = result;
-    return 0;
-  }
+  if ( !wait )
+	  return true;
+  return waitReady() && getResult();
+}
+
+bool Sensirion::waitReady(){
   // Otherwise, wait for measurement to complete with 720ms timeout
-  i = 240;
+  int i = 240;
+  if ( _reqmode == 0 )
+	  return false;
   while (digitalRead(_pinData)) {
     i--;
-    if (i == 0)
-      return S_Err_TO;              // Error: Timeout
+    if (i == 0) {
+      _error = S_Err_TO;              // Error: Timeout
+      return false;
+    }
     delay(3);
   }
-  error = getResult(result);
-  return error;
+  return true;
 }
 
 // Check if non-blocking measurement has completed
 // Non-zero return indicates complete (with or without error)
-uint8_t Sensirion::measRdy(void) {
-  uint8_t error = 0;
-  if (_presult == NULL)             // Already done?
-    return S_Meas_Rdy;
-  if (digitalRead(_pinData) != 0)   // Measurement ready yet?
-    return 0;
-  error = getResult(_presult);
-  _presult = NULL;
-  if (error)
-    return error;                   // Only possible error is S_Err_CRC
-  return S_Meas_Rdy;
+bool Sensirion::dataReady(void) {
+  if (_reqmode == 0) {            // Already done?
+  	return false;
+  }
+  if (digitalRead(_pinData))   // Measurement ready yet?
+    return false;
+  _error = S_Meas_Rdy;
+  return true;
 }
 
 // Get measurement result from sensor (plus CRC, if enabled)
-uint8_t Sensirion::getResult(uint16_t *result) {
-  uint8_t val;
+bool Sensirion::getResult() {
+	uint16_t * result;
+	  uint8_t val;
+	if ( _reqmode == MEAS_TEMP ) {
+		result = &_rawtemp;
+	} else {
+		result = &_rawhumid;
+	}
 #ifdef CRC_ENA
   val = getByte(ACK);
   calcCRC(val, &_crc);
@@ -168,37 +174,38 @@ uint8_t Sensirion::getResult(uint16_t *result) {
   val = bitrev(val);
   if (val != _crc) {
     *result = 0xFFFF;
-    return S_Err_CRC;
+    _error = S_Err_CRC;
+    return false;
   }
 #else
   *result = getByte(ACK);
   *result = (*result << 8) | getByte(noACK);
 #endif
-  return 0;
+  _reqmode = MODE_IDLE;
+  return true;
 }
 
 // Write status register
-uint8_t Sensirion::writeSR(uint8_t value) {
-  uint8_t error;
+bool Sensirion::writeSR(uint8_t value) {
   value &= SR_MASK;                 // Mask off unwritable bits
   _stat_reg = value;                // Save local copy
   startTransmission();
-  if (error = putByte(STAT_REG_W))
-    return error;
-  return putByte(value);
+  if (_error = putByte(STAT_REG_W))
+    return false;
+  return putByte(value) == 0;
 }
 
 // Read status register
-uint8_t Sensirion::readSR(uint8_t *result) {
+bool Sensirion::readSR(uint8_t *result) {
   uint8_t val;
-  uint8_t error = 0;
+  _error = 0;
 #ifdef CRC_ENA
   _crc = bitrev(_stat_reg & SR_MASK);  // Initialize CRC calculation
 #endif
   startTransmission();
-  if (error = putByte(STAT_REG_R)) {
+  if (_error = putByte(STAT_REG_R)) {
     *result = 0xFF;
-    return error;
+    return false;
   }
 #ifdef CRC_ENA
   calcCRC(STAT_REG_R, &_crc);       // Include command byte in CRC calculation
@@ -208,12 +215,12 @@ uint8_t Sensirion::readSR(uint8_t *result) {
   val = bitrev(val);
   if (val != _crc) {
     *result = 0xFF;
-    error = S_Err_CRC;
+    _error = S_Err_CRC;
   }
 #else
   *result = getByte(noACK);
 #endif
-  return error;
+  return _error == 0;
 }
 
 // Public reset function
@@ -232,7 +239,6 @@ uint8_t Sensirion::reset(void) {
 // Write byte to sensor and check for acknowledge
 uint8_t Sensirion::putByte(uint8_t value) {
   uint8_t mask, i;
-  uint8_t error = 0;
   pinMode(_pinData, OUTPUT);        // Set data line to output mode
   mask = 0x80;                      // Bit mask to transmit MSB first
   for (i = 8; i > 0; i--) {
@@ -251,10 +257,10 @@ uint8_t Sensirion::putByte(uint8_t value) {
   digitalWrite(_pinClock, HIGH);    // Clock #9 for ACK
   PULSE_LONG;
   if (digitalRead(_pinData))        // Verify ACK ('0') received from sensor
-    error = S_Err_NoACK;
+    _error = S_Err_NoACK;
   PULSE_SHORT;
   digitalWrite(_pinClock, LOW);     // Finish with clock in low state
-  return error;
+  return _error;
 }
 
 // Read byte from sensor and send acknowledge if "ack" is true
@@ -341,23 +347,23 @@ void Sensirion::resetConnection(void) {
  ******************************************************************************/
 
 // Calculates temperature in degrees C from raw sensor data
-float Sensirion::calcTemp(uint16_t rawData) {
+float Sensirion::calcTemp() {
   if (_stat_reg & LOW_RES)
-    return D1 + D2l * (float) rawData;
+    return D1 + D2l * (float) _rawtemp;
   else
-    return D1 + D2h * (float) rawData;
+    return D1 + D2h * (float) _rawtemp;
 }
 
 // Calculates relative humidity from raw sensor data
 //   (with temperature compensation)
-float Sensirion::calcHumi(uint16_t rawData, float temp) {
+float Sensirion::calcHumi() {
   float humi;
   if (_stat_reg & LOW_RES) {
-    humi = C1 + C2l * rawData + C3l * rawData * rawData;
-    humi = (temp - 25.0) * (T1 + T2l * rawData) + humi;
+    humi = C1 + C2l * _rawhumid + C3l * _rawhumid * _rawhumid;
+    humi = (calcTemp() - 25.0) * (T1 + T2l * _rawhumid) + humi;
   } else {
-    humi = C1 + C2h * rawData + C3h * rawData * rawData;
-    humi = (temp - 25.0) * (T1 + T2h * rawData) + humi;
+    humi = C1 + C2h * _rawhumid + C3h * _rawhumid * _rawhumid;
+    humi = (calcTemp() - 25.0) * (T1 + T2h * _rawhumid) + humi;
   }
   if (humi > 100.0) humi = 100.0;
   if (humi < 0.1) humi = 0.1;
@@ -365,9 +371,9 @@ float Sensirion::calcHumi(uint16_t rawData, float temp) {
 }
 
 // Calculates dew point in degrees C
-float Sensirion::calcDewpoint(float humi, float temp) {
+float Sensirion::calcDewpoint() {
   float k;
-  k = log(humi/100) + (17.62 * temp) / (243.12 + temp);
+  k = log(calcHumi()/100) + (17.62 * calcTemp()) / (243.12 + calcTemp());
   return 243.12 * k / (17.62 - k);
 }
 

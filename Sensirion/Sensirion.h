@@ -28,10 +28,11 @@
 #define PULSE_LONG  delayMicroseconds(3)
 #define PULSE_SHORT delayMicroseconds(1)
 
+/*
 // Useful macros
-#define measTemp(result)  meas(TEMP, result, BLOCK)
-#define measHumi(result)  meas(HUMI, result, BLOCK)
-
+#define measTemp(result)  measure(TEMP)
+#define measHumi(result)  measure(HUMI)
+*/
 // User constants
 const uint8_t TEMP     =     0;
 const uint8_t HUMI     =     1;
@@ -50,17 +51,24 @@ const uint8_t S_Err_CRC    = 2;  // CRC failure
 const uint8_t S_Err_TO     = 3;  // Timeout
 const uint8_t S_Meas_Rdy   = 4;  // Measurement ready
 
-class Sensirion
-{
+class Sensirion {
+public:
+	enum {
+		MODE_IDLE = 0,
+		MODE_TEMP = 0x03,   // 000  0001   1
+		MODE_HUMI = 0x05,   // 000  0010   1
+	};
+
   private:
     uint8_t _pinData;
     uint8_t _pinClock;
-    uint16_t *_presult;
+    uint8_t _reqmode;
+    uint16_t _rawtemp, _rawhumid;
+    uint8_t _error;
     uint8_t _stat_reg;
 #ifdef CRC_ENA
     uint8_t _crc;
 #endif
-    uint8_t getResult(uint16_t *result);
     uint8_t putByte(uint8_t value);
     uint8_t getByte(bool ack);
     void startTransmission(void);
@@ -72,15 +80,23 @@ class Sensirion
 
   public:
     Sensirion(uint8_t dataPin, uint8_t clockPin);
-    uint8_t measure(float *temp, float *humi, float *dew);   
-    uint8_t meas(uint8_t cmd, uint16_t *result, bool block);
-    uint8_t measRdy(void);
-    uint8_t writeSR(uint8_t value);
-    uint8_t readSR(uint8_t *result);
+    uint8_t calculate(float *temp, float *humi, float *dew);
+    bool measure(uint8_t cmd, bool wait = true);
+    bool requestTemp() { return measure(TEMP, false); }
+    bool requestHumi() { return measure(HUMI, false); }
+    bool waitReady();
+    bool dataReady(void);
+    bool getResult();
+    bool writeSR(uint8_t value);
+    bool readSR(uint8_t *result);
     uint8_t reset(void);
-    float calcTemp(uint16_t rawData);
-    float calcHumi(uint16_t rawData, float temp);
-    float calcDewpoint(float humi, float temp);
+    float calcTemp();
+    float calcHumi();
+    float calcDewpoint();
+
+    uint8_t error() { uint8_t err = _error; _error = 0; return err; }
+    uint8_t requested() { return _reqmode; }
+    void clearMode() { _reqmode = MODE_IDLE; }
 };
 
 #endif  // #ifndef Sensirion_h

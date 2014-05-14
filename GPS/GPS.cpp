@@ -7,25 +7,25 @@
 
 #include <GPS.h>
 
-void GPS::begin(unsigned long baud) {
+bool GPS::begin(void) {
 	if ( _onoff != 0xff ) {
 		pinMode(_onoff, OUTPUT);
 		digitalWrite(_onoff, HIGH);
 	}
-	SoftwareSerial::begin(baud);
+	return true;
 }
 
 bool GPS::start(void) {
 	if ( _onoff == 0xff )
 		return true;
 	delay(1200);
-	if ( available() > 6 )
+	if ( port.available() > 6 )
 		return true;
 	digitalWrite(_onoff, LOW);
 	delay(1200);
 	digitalWrite(_onoff, HIGH);
 	delay(1200);
-	return available() > 6;
+	return port.available() > 6;
 }
 
 bool GPS::readGGA() {
@@ -35,29 +35,29 @@ bool GPS::readGGA() {
 	if ( !readStrUntil(',',tmp,12) ) // UTC
 		return false;
 	_utc = atof(tmp);
-	find(","); 	// Valid/Non Valid
+	port.find(","); 	// Valid/Non Valid
 	if ( !readStrUntil(',',tmp,12) ) // Lat.
 		return false;
 	_latitude = atof(tmp);
 	if ( !readStrUntil(',',tmp,12) ) // N/S
 		return false;
 	if (tmp[0] == 'S') _latitude = -_latitude;
-	if ( (n = readBytesUntil(',',tmp,12)) ) // Long.
+	if ( (n = port.readBytesUntil(',',tmp,12)) ) // Long.
 		return false;
 	_longitude = atof(tmp);
 	if ( readStrUntil(',',tmp,12) )	// E/W
 		return false;
 	if (tmp[0] == 'W') _longitude = -_longitude;
-	find(",");
-	find(",");
-	find(",");
+	port.find(",");
+	port.find(",");
+	port.find(",");
 	if ( !readStrUntil(',',tmp,12) ) // alt.
 		return false;
 	_altitude = atof(tmp);
 	if ( readStrUntil(',',tmp,12) )	// M
 		return false;
 	if (tmp[0] != 'M') _altitude = 0;
-	find("\n");
+	port.find("\n");
 	return true;
 }
 
@@ -67,18 +67,18 @@ bool GPS::readRMC() {
 	if ( !readStrUntil(',',tmp,12) ) // UTC
 		return false;
 	_utc = atof(tmp);
-	find(","); 	// Valid/Non Valid
+	port.find(","); 	// Valid/Non Valid
 	if ( !readStrUntil(',',tmp,12) ) // Lat.
 		return false;
 		_latitude = atof(tmp);
-	if ( !readBytesUntil(',',tmp,12) ) // N/S
+	if ( !port.readBytesUntil(',',tmp,12) ) // N/S
 		return false;
 	else
 		if (tmp[0] == 'S') _latitude = -_latitude;
-	if ( !readBytesUntil(',',tmp,12) ) // Long.
+	if ( !port.readBytesUntil(',',tmp,12) ) // Long.
 		return false;
 	_longitude = atof(tmp);
-	if ( !readBytesUntil(',',tmp,12) ) // E/W
+	if ( !port.readBytesUntil(',',tmp,12) ) // E/W
 		return false;
 	else
 		if (tmp[0] == 'W') _longitude = -_longitude;
@@ -92,16 +92,16 @@ bool GPS::readRMC() {
 	if ( !readStrUntil(',',tmp,12) )	// date
 		return false;
 	_date = atof(tmp);
-	find("\n");
+	port.find("\n");
 	return true;
 }
 
 unsigned long GPS::catchMessage(unsigned long timeout) {
 	size_t n;
 	char tmp[8];
-	setTimeout(timeout);
-	if ( !find("$") ) return false;
-	n = readBytesUntil(',', tmp, 7);
+	port.setTimeout(timeout);
+	if ( !port.find("$") ) return false;
+	n = port.readBytesUntil(',', tmp, 7);
 	return ((unsigned long)tmp[2])<<16 | ((unsigned long)tmp[3]) << 8 | tmp[4];
 }
 /*

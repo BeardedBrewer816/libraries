@@ -46,6 +46,8 @@ public:
 	unsigned long catchMessage(unsigned long timeout);
 	bool readRMC();
 	bool readGGA();
+	bool readGSA();
+	bool skipLine() { return port.find("\n"); }
 	bool getSentence(const char msg[6], char * result, unsigned long timeout = 1000);
 
 	float latitude(float & );

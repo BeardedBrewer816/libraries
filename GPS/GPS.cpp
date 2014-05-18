@@ -18,7 +18,7 @@ bool GPS::begin(void) {
 bool GPS::start(void) {
 	if ( _onoff == 0xff )
 		return true;
-	delay(1200);
+	delay(200);
 	if ( port.available() > 6 )
 		return true;
 	digitalWrite(_onoff, LOW);
@@ -92,6 +92,40 @@ bool GPS::readRMC() {
 	if ( !readStrUntil(',',tmp,12) )	// date
 		return false;
 	_date = atof(tmp);
+	port.find("\n");
+	return true;
+}
+
+
+bool GPS::readGSA() {
+//	GGA (474741): 065048.000,3335.5119,N,13021.3472,E,1,05,7.2,48.1,M,27.3,M,,0000
+	int n;
+	char tmp[12];
+	if ( !readStrUntil(',',tmp,12) ) // UTC
+		return false;
+	_utc = atof(tmp);
+	port.find(","); 	// Valid/Non Valid
+	if ( !readStrUntil(',',tmp,12) ) // Lat.
+		return false;
+	_latitude = atof(tmp);
+	if ( !readStrUntil(',',tmp,12) ) // N/S
+		return false;
+	if (tmp[0] == 'S') _latitude = -_latitude;
+	if ( (n = port.readBytesUntil(',',tmp,12)) ) // Long.
+		return false;
+	_longitude = atof(tmp);
+	if ( readStrUntil(',',tmp,12) )	// E/W
+		return false;
+	if (tmp[0] == 'W') _longitude = -_longitude;
+	port.find(",");
+	port.find(",");
+	port.find(",");
+	if ( !readStrUntil(',',tmp,12) ) // alt.
+		return false;
+	_altitude = atof(tmp);
+	if ( readStrUntil(',',tmp,12) )	// M
+		return false;
+	if (tmp[0] != 'M') _altitude = 0;
 	port.find("\n");
 	return true;
 }

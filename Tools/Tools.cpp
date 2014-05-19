@@ -7,7 +7,6 @@
 
 #include "Tools.h"
 
-
 size_t printBytes(Print & prn, const uint8_t * p, const uint8_t length, const uint8_t base, const char sep) {
 	size_t n = 0;
 	int bit, val;

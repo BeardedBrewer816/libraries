@@ -19,7 +19,6 @@
 #include <WProgram.h>
 #endif
 #include <Wire.h>
-
 #endif
 
 
@@ -113,15 +112,8 @@ public:
 
   // returns true if the value is changed from time/cal.
 	boolean updateTime();
-	boolean updateCalendar();
-	inline boolean update() { return updateTime() && updateCalendar(); }
+	boolean update(); // both time and calendar date.
 
-	word year() { return 2000+BCD2uint8(date>>16 & 0xff); }
-	byte month() { return BCD2uint8(date>>8 & 0xff); }
-	byte day() { return BCD2uint8(date & 0xff); }
-	byte hour() { return BCD2uint8(time>>16 & 0xff); }
-	byte minute() { return BCD2uint8(time>>8 & 0xff); }
-	byte second() { return BCD2uint8(time & 0xff); }
 	byte getSeconds();
 //		byte* getTimestamp(byte* );
 	void setTime(const long &);
@@ -163,7 +155,13 @@ public:
 	  return buf;
   }
 
-  static uint8_t BCD2uint8(uint8_t);
+  static uint32_t BCD2uint32(uint32_t);
+	word year() { return 2000+BCD2uint32(date>>16 & 0xff); }
+	byte month() { return BCD2uint32(date>>8 & 0xff); }
+	byte day() { return BCD2uint32(date & 0xff); }
+	byte hour() { return BCD2uint32(time>>16 & 0xff); }
+	byte minute() { return BCD2uint32(time>>8 & 0xff); }
+	byte second() { return BCD2uint32(time & 0xff); }
 
 };
 

@@ -1,164 +1,188 @@
 /*
  * GPS.cpp
  *
- *  Created on: 2012/03/26
+ *  Created on: 2014/05/10
  *      Author: sin
  */
 
-#include "GPS.h"
+#include <GPS.h>
 
-boolean GPS::update(const byte typemask) {
-	long lasttime = time;
-	if ( ! getSentence() )
-		return false;
-	switch(sentenceType() & typemask) {
-	case GGA:
-		time = getFloat(GGA_UTC)*100;
-	    latitude = getFloat(GGA_LATITUDE)*100;
-	    if ( getChar(GGA_LATITUDE+1) == 'S' )
-	    	latitude = -latitude;
-	    longitude = getFloat(GGA_LONGITUDE)*100;
-	    if ( getChar(GGA_LONGITUDE+1) == 'W' )
-	    	longitude = -longitude;
-	    dilution = getFloat(GGA_DILUTION);
-	    altitude = getFloat(GGA_ALTITUDE);
-    	return (time != 0) && (lasttime != time);
-		break;
-	case RMC:
-		time = getFloat(RMC_UTC)*100;
-		latitude = getFloat(RMC_LATITUDE)*100;
-	    if ( getChar(RMC_LATITUDE+1) == 'S' )
-	    	latitude = -latitude;
-		longitude = getFloat(RMC_LONGITUDE)*100;
-	    if ( getChar(RMC_LONGITUDE+1) == 'W' )
-	    	longitude = -longitude;
-		grndspeed = getFloat(RMC_GROUNDSPEED);
-		trackangle = getFloat(RMC_TRACKANGLE);
-		caldate = getLong(RMC_DATE);
-		caldate = (2000 + (caldate % 100)) * 10000
-				+ (caldate / 100 % 100) * 100 + (caldate / 10000);
-    	return (time != 0) && (lasttime != time);
-		break;
-	case ZDA:
-		caldate = getLong(4) * 10000 + getLong(3) * 100 + getLong(2);
+bool GPS::begin(void) {
+	if ( _onoff != 0xff ) {
+		pinMode(_onoff, OUTPUT);
+		digitalWrite(_onoff, HIGH);
+	}
+	return true;
+}
+
+bool GPS::start(void) {
+	if ( _onoff == 0xff )
 		return true;
-		break;
-	}
-	return false;
+	delay(200);
+	if ( port.available() > 6 )
+		return true;
+	digitalWrite(_onoff, LOW);
+	delay(1200);
+	digitalWrite(_onoff, HIGH);
+	delay(1200);
+	return port.available() > 6;
 }
 
-boolean GPS::getSentence() {
-	char c;
-	while (port.available()) {
-		c = (char) port.read();
-		if (!isprint(c)) {
-			if (pos == 0)
-				continue;
-			break;
-		}
-		if (c == '$') {
-			pos = 0;
-			buffer[0] = 0;
-			continue;
-		}
-		buffer[pos] = c;
-		pos++;
-		buffer[pos] = 0;
-	}
-	if (isprint(c))
+bool GPS::readGGA() {
+//	GGA (474741): 065048.000,3335.5119,N,13021.3472,E,1,05,7.2,48.1,M,27.3,M,,0000
+	int n;
+	char tmp[12];
+	if ( !readStrUntil(',',tmp,12) ) // UTC
 		return false;
-	if (pos == 0)
+	_utc = atof(tmp);
+	port.find(","); 	// Valid/Non Valid
+	if ( !readStrUntil(',',tmp,12) ) // Lat.
 		return false;
-	//
-	int i;
-	byte xsum = 0;
-	for (i = 0; buffer[i] && buffer[i] != '*'; i++) {
-		xsum ^= buffer[i];
-	}
-	if (buffer[i] == '*') {
-		i++;
-		if (xsum == (byte) strtol(buffer + i, NULL, 16)) {
-			pos = 0;
-			return true;
-		}
-	}
-	return false;
+	_latitude = atof(tmp);
+	if ( !readStrUntil(',',tmp,12) ) // N/S
+		return false;
+	if (tmp[0] == 'S') _latitude = -_latitude;
+	if ( (n = port.readBytesUntil(',',tmp,12)) ) // Long.
+		return false;
+	_longitude = atof(tmp);
+	if ( readStrUntil(',',tmp,12) )	// E/W
+		return false;
+	if (tmp[0] == 'W') _longitude = -_longitude;
+	port.find(",");
+	port.find(",");
+	port.find(",");
+	if ( !readStrUntil(',',tmp,12) ) // alt.
+		return false;
+	_altitude = atof(tmp);
+	if ( readStrUntil(',',tmp,12) )	// M
+		return false;
+	if (tmp[0] != 'M') _altitude = 0;
+	port.find("\n");
+	return true;
+}
+
+bool GPS::readRMC() {
+	int n;
+	char tmp[12];
+	if ( !readStrUntil(',',tmp,12) ) // UTC
+		return false;
+	_utc = atof(tmp);
+	port.find(","); 	// Valid/Non Valid
+	if ( !readStrUntil(',',tmp,12) ) // Lat.
+		return false;
+		_latitude = atof(tmp);
+	if ( !port.readBytesUntil(',',tmp,12) ) // N/S
+		return false;
+	else
+		if (tmp[0] == 'S') _latitude = -_latitude;
+	if ( !port.readBytesUntil(',',tmp,12) ) // Long.
+		return false;
+	_longitude = atof(tmp);
+	if ( !port.readBytesUntil(',',tmp,12) ) // E/W
+		return false;
+	else
+		if (tmp[0] == 'W') _longitude = -_longitude;
+
+	if ( !readStrUntil(',',tmp,12) )	// knots
+		return false;
+	_knots = atof(tmp);
+	if ( !readStrUntil(',',tmp,12) )	// knots
+		return false;
+	_degree = atof(tmp);
+	if ( !readStrUntil(',',tmp,12) )	// date
+		return false;
+	_date = atof(tmp);
+	port.find("\n");
+	return true;
 }
 
 
-void GPS::copyItem(char * dst, int inum) {
-	int i;
-	int icount = 0;
-	int p = 0; // if buffer[0] == $ then p must be 1.
-	dst[0] = 0;
-	for (i = 0; buffer[i]; i++) {
-		if (buffer[i] == ',' or buffer[i] == '*') {
-			if (icount == inum) {
-				strncpy(dst, buffer + p, i - p);
-				dst[i - p] = 0;
-				return;
-			}
-			if (buffer[i] == '*')
-				break;
-			icount++;
-			p = i + 1;
-		}
-	}
-	return;
+bool GPS::readGSA() {
+//	GGA (474741): 065048.000,3335.5119,N,13021.3472,E,1,05,7.2,48.1,M,27.3,M,,0000
+	int n;
+	char tmp[12];
+	if ( !readStrUntil(',',tmp,12) ) // UTC
+		return false;
+	_utc = atof(tmp);
+	port.find(","); 	// Valid/Non Valid
+	if ( !readStrUntil(',',tmp,12) ) // Lat.
+		return false;
+	_latitude = atof(tmp);
+	if ( !readStrUntil(',',tmp,12) ) // N/S
+		return false;
+	if (tmp[0] == 'S') _latitude = -_latitude;
+	if ( (n = port.readBytesUntil(',',tmp,12)) ) // Long.
+		return false;
+	_longitude = atof(tmp);
+	if ( readStrUntil(',',tmp,12) )	// E/W
+		return false;
+	if (tmp[0] == 'W') _longitude = -_longitude;
+	port.find(",");
+	port.find(",");
+	port.find(",");
+	if ( !readStrUntil(',',tmp,12) ) // alt.
+		return false;
+	_altitude = atof(tmp);
+	if ( readStrUntil(',',tmp,12) )	// M
+		return false;
+	if (tmp[0] != 'M') _altitude = 0;
+	port.find("\n");
+	return true;
 }
 
-const char * GPS::getPtr(int inum) {
-	int i;
-	int icount = 0;
-	int p = 0; // if buffer[0] == $ then p must be 1.
-	for (i = 0; buffer[i]; i++) {
-		if (icount == inum) {
-			return buffer+i;
-		}
-		if ( buffer[i] == ',' ) {
-			icount++;
-		}
-	}
-	return NULL;
+unsigned long GPS::catchMessage(unsigned long timeout) {
+	size_t n;
+	char tmp[8];
+	port.setTimeout(timeout);
+	if ( !port.find("$") ) return false;
+	n = port.readBytesUntil(',', tmp, 7);
+	return ((unsigned long)tmp[2])<<16 | ((unsigned long)tmp[3]) << 8 | tmp[4];
+}
+/*
+bool GPS::getSentence(const char msg[6], char * result, unsigned long timeout) {
+    size_t n;
+    char tmp[8] = "$";
+    setTimeout(timeout);
+    strcat(tmp, msg);
+	if (!find(tmp)) return false;
+
+    n = readBytesUntil('*', result, 128);
+    result[n] = 0;
+    n = readBytesUntil('\n',tmp, 8);
+    tmp[n] = 0;
+    strcat(result,"#");
+    strcat(result,tmp);
+    return true;
+}
+*/
+float GPS::latitude(void) {
+	double ipart;
+	float fpart = modf(_latitude/100.0f, &ipart);
+	return ipart + fpart*1.666667;
 }
 
-char GPS::getChar(int inum) {
-	//char tmp[16] = "";
-	//copyItem(tmp, inum);
-	return *getPtr(inum); //tmp[0];
+float GPS::latitude(float & secs) {
+	double ipart;
+	secs = modf(_latitude, &ipart) * 60.0f;
+	return ipart/100.0;
 }
 
-long GPS::getLong(int inum) {
-//	char tmp[16] = "";
-//	copyItem(tmp, inum);
-	return atol(getPtr(inum)); //tmp);
+float GPS::longitude(void) {
+	double ipart;
+	float fpart = modf(_longitude/100.0f, &ipart);
+	return ipart + fpart*1.666667;
 }
 
-float GPS::getFloat(int inum) {
-//	char tmp[16] = "";
-//	copyItem(tmp, inum);
-	return atof(getPtr(inum)); //tmp);
+float GPS::longitude(float & secs) {
+	double ipart;
+	secs = modf(_longitude, &ipart) * 60.0f;
+	return ipart/100.0;
 }
 
-const byte GPS::sentenceType() {
-	char * p = buffer + 2;
-	char c = *p++;
-	if (c == 'G') {
-		if (strncmp(p, "GA", 2) == 0)
-			return GGA;
-		if (strncmp(p, "LL", 2) == 0)
-			return GLL;
-		if (strncmp(p, "SA", 2) == 0)
-			return GSA;
-		if (strncmp(p, "SV", 2) == 0)
-			return GSV;
-	} else if ( c == 'R') {
-		if (strncmp(p, "MC", 2) == 0)
-			return RMC;
-	} else if ( c == 'Z') {
-		if (strncmp(p, "DA", 2) == 0)
-			return ZDA;
-	}
-	return 0;
+float GPS::JST() {
+	if ( _utc + 90000.0 >= 240000.0 )
+		return _utc + 150000.0;
+	else
+		return _utc + 90000.0;
 }
 

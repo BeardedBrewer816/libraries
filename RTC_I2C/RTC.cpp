@@ -21,9 +21,21 @@ const char RTC::NameOfMonth[]=
 #endif
 
 
-uint8_t RTC::BCD2uint8(uint8_t d) {
-	uint8_t t = 0;
-	t = d>>4 & 0x0f;
+uint32_t RTC::BCD2uint32(uint32_t d) {
+	uint32_t t;
+	t = d>>28 & 0x0f;
+	t *= 10;
+	t += d>>24 & 0x0f;
+	t *= 10;
+	t += d>>20 & 0x0f;
+	t *= 10;
+	t += d>>16 & 0x0f;
+	t *= 10;
+	t += d>>12 & 0x0f;
+	t *= 10;
+	t += d>>8 & 0x0f;
+	t *= 10;
+	t += d>>4 & 0x0f;
 	t *= 10;
 	t += d & 0x0f;
 	return t;
@@ -96,19 +108,28 @@ void RTC::writeRegisters(uint8_t addr, uint8_t *regvals, uint8_t num)
 boolean RTC::updateTime() {
 	uint32_t tmp = time;
 	readRegisters((byte) DS1307_SEC, (byte *) &tmp, 3);
+	tmp &= ((unsigned long)BITS_YR<<16 | (unsigned long)BITS_MTH<<8 | BITS_DATE);
 	if (tmp != time) {
-		time = tmp & ((unsigned long)BITS_HR<<16 | BITS_MIN<<8 | BITS_SEC);
+		time = tmp;
 		return true;
 	}
 	return false;
 }
 
-boolean RTC::updateCalendar() {
-  uint32_t tmp = date;
-	readRegisters((byte) DS1307_DATE, (byte *) &date, 3);
-	date &= ((unsigned long)BITS_YR<<16 | (unsigned long)BITS_MTH<<8 | BITS_DATE);
-  if ( tmp != date ) 
-    return true;
+boolean RTC::update() {
+	uint8_t tmp[7];
+	uint32_t t_date;
+	uint32_t t_time;
+	readRegisters((byte) DS1307_SEC, (byte *) tmp, 7);
+	t_time = tmp[0] | uint32_t(tmp[1])<<8 | uint32_t(tmp[2])<<16;
+	t_time &= ((unsigned long)BITS_YR<<16 | (unsigned long)BITS_MTH<<8 | BITS_DATE);
+	t_date = tmp[4] | uint32_t(tmp[5])<<8 | uint32_t(tmp[6])<<16;
+	t_date &= ((unsigned long)BITS_YR<<16 | (unsigned long)BITS_MTH<<8 | BITS_DATE);
+	if ( t_date != date || t_time != time ) {
+		time = t_time;
+		date = t_date;
+		return true;
+	}
   return false;
 }
 

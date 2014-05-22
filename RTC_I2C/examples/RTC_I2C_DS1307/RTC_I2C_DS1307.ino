@@ -104,11 +104,10 @@ void loop() {
     }
   }
   
-  rtc.updateTime();
+  rtc.update();
   if ( rtc.time != clockval ) {
     Serial.println(millis() - millis_offset);
     clockval = rtc.time;
-    rtc.updateCalendar();
     Serial.print( rtc.time, HEX );
     Serial.print(" ");
     Serial.print( rtc.date, HEX);

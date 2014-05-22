@@ -267,6 +267,11 @@ public:
 	//	- gyro = A signed 16-bit raw reading from the gyroscope.
 	float calcGyro(int16_t gyro);
 	
+	//
+	inline float gyroX() { return calcGyro(gx); }
+	inline float gyroY() { return calcGyro(gy); }
+	inline float gyroZ() { return calcGyro(gz); }
+
 	// calcAccel() -- Convert from RAW signed 16-bit value to gravity (g's).
 	// This function reads in a signed 16-bit value and returns the scaled
 	// g's. This function relies on aScale and aRes being correct.
@@ -274,6 +279,11 @@ public:
 	//	- accel = A signed 16-bit raw reading from the accelerometer.
 	float calcAccel(int16_t accel);
 	
+	//
+	inline float accelX() { return calcAccel(ax); }
+	inline float accelY() { return calcAccel(ay); }
+	inline float accelZ() { return calcAccel(az); }
+
 	// calcMag() -- Convert from RAW signed 16-bit value to Gauss (Gs)
 	// This function reads in a signed 16-bit value and returns the scaled
 	// Gs. This function relies on mScale and mRes being correct.
@@ -281,6 +291,11 @@ public:
 	//	- mag = A signed 16-bit raw reading from the magnetometer.
 	float calcMag(int16_t mag);
 	
+	//
+	inline float magX() { return calcMag(mx); }
+	inline float magY() { return calcMag(my); }
+	inline float magZ() { return calcMag(mz); }
+
 	// setGyroScale() -- Set the full-scale range of the gyroscope.
 	// This function can be called to set the scale of the gyroscope to 
 	// 245, 500, or 200 degrees per second.

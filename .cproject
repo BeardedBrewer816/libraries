@@ -50,9 +50,11 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="Arduino_hardware_libraries|Arduino_hardware_cores" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="hardware|variants|Arduino_hardware_libraries|Arduino_hardware_cores" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Arduino_hardware_cores"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Arduino_hardware_libraries"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="hardware"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="variants"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

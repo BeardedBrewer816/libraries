@@ -35,5 +35,15 @@
 			<type>2</type>
 			<location>/Applications/Arduino.app/Contents/Resources/Java/libraries</location>
 		</link>
+		<link>
+			<name>hardware</name>
+			<type>2</type>
+			<location>/Users/sin/Documents/Arduino/hardware</location>
+		</link>
+		<link>
+			<name>variants</name>
+			<type>2</type>
+			<location>/Applications/Arduino.app/Contents/Resources/Java/hardware/arduino/variants</location>
+		</link>
 	</linkedResources>
 </projectDescription>

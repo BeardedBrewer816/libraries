@@ -49,13 +49,8 @@ void RTC::readRegisters(uint8_t addr, uint8_t * regvals, uint8_t num) {
 	// use the Wire lib to connect to tho rtc
 	// reset the resgiter pointer to zero
 
-	wire.beginTransmission(DS1307_CTRL_ID);
-//#if ARDUINO >= 100
-//    WIRE_WRITE(addr); //Wire.send(addr);
- 	wire.write(addr+chipID);
-//#else
- //	Wire.send(addr);
-//#endif
+	wire.beginTransmission(I2C_CTRL_ID);
+ 	wire.write(addr);
 #if defined ARMCMX
 	wire.endRequest();
 #elif defined (ARDUINO)
@@ -63,51 +58,31 @@ void RTC::readRegisters(uint8_t addr, uint8_t * regvals, uint8_t num) {
 #endif
 	// request num bytes of data
 #if defined (ARDUINO)
-	wire.requestFrom((uint8_t)DS1307_CTRL_ID, num);
+	wire.requestFrom((uint8_t)I2C_CTRL_ID, num);
 #elif defined (ARMCMX)
-	wire.receiveFrom((uint8_t)DS1307_CTRL_ID, num);
+	wire.receiveFrom((uint8_t)I2C_CTRL_ID, num);
 #endif
 	for(int i = 0; i < num; i++) {
 		// store data in raw bcd format
-//#if ARDUINO >= 100
 		*regvals++ = wire.read(); //Wire.receive();
-//#else
-//		*regvals++ = Wire.receive(); //Wire.receive();
-//#endif
 	}
-	
-//	i2c_request(&i2cx, DS1307_CTRL_ID, &addr, 1);
-//	i2c_receive(&i2cx, regvals, num);
 }
 
 // update the data on the IC from the bcd formatted data in the buffer
 void RTC::writeRegisters(uint8_t addr, uint8_t *regvals, uint8_t num)
 {
-	wire.beginTransmission(DS1307_CTRL_ID);
-//#if ARDUINO >= 100
-	wire.write(addr+chipID); // reset register pointer
-//#else
-//	Wire.send(addr); // reset register pointer
-//#endif
+	wire.beginTransmission(I2C_CTRL_ID);
+	wire.write(addr); // reset register pointer
 	for(int i=0; i<num; i++) {
-//#if ARDUINO >= 100
 		wire.write(*regvals++);
-//#else
-//		Wire.send(*regvals++);
-//#endif
 	}
 	wire.endTransmission();
-
-//	uint8 buf[8];
-//	buf[0] = addr;
-//	memcpy(buf+1, regvals, num);
-//	i2c_transmit(&i2cx, DS1307_CTRL_ID, buf, num+1);
 }
 
 
 boolean RTC::updateTime() {
 	uint32_t tmp = time;
-	readRegisters((byte) DS1307_SEC, (byte *) &tmp, 3);
+	readRegisters( rSec, (byte *) &tmp, 3);
 	tmp &= ((unsigned long)BITS_YR<<16 | (unsigned long)BITS_MTH<<8 | BITS_DATE);
 	if (tmp != time) {
 		time = tmp;
@@ -117,14 +92,13 @@ boolean RTC::updateTime() {
 }
 
 boolean RTC::update() {
-	uint8_t tmp[7];
+	uint8_t tmp[4];
 	uint32_t t_date;
 	uint32_t t_time;
-	readRegisters((byte) DS1307_SEC, (byte *) tmp, 7);
-	t_time = tmp[0] | uint32_t(tmp[1])<<8 | uint32_t(tmp[2])<<16;
-	t_time &= ((unsigned long)BITS_YR<<16 | (unsigned long)BITS_MTH<<8 | BITS_DATE);
-	t_date = tmp[4] | uint32_t(tmp[5])<<8 | uint32_t(tmp[6])<<16;
-	t_date &= ((unsigned long)BITS_YR<<16 | (unsigned long)BITS_MTH<<8 | BITS_DATE);
+	readRegisters((byte) rSec, (byte *) tmp, 3);
+	t_time = (tmp[0] & BITS_SEC) | uint32_t(tmp[1] & BITS_MIN)<<8 | uint32_t(tmp[2] & BITS_HR)<<16;
+	readRegisters((byte) rDate, (byte *) tmp, 3);
+	t_date = (tmp[0] & BITS_DATE) | uint32_t(tmp[1] & BITS_MTH)<<8 | uint32_t(tmp[2] & BITS_YR)<<16;
 	if ( t_date != date || t_time != time ) {
 		time = t_time;
 		date = t_date;
@@ -135,20 +109,20 @@ boolean RTC::update() {
 
 uint8_t RTC::getSeconds() {
 	uint8_t sec;
-	readRegisters((byte) DS1307_SEC, (byte *) &sec, 1);
+	readRegisters((byte) rSec, (byte *) &sec, 1);
 	return sec & BITS_SEC;
 }
 
 void RTC::setTime(const long & p) {
 //	writeRegisters((byte *) &(p ((unsigned long)BITS_HR<<16 | BITS_MIN<<8 | BITS_SEC)),
 //			(byte) DS1307_SEC, 3);
-	writeRegisters((byte) DS1307_SEC, (byte *) &p, 3);
+	writeRegisters((byte) rSec, (byte *) &p, 3);
 }
 
 void RTC::setCalendar(const long & p) {
 	// YYMMDD
 //	writeRegisters((byte*) &(p & ((unsigned long)BITS_YR<<16 | (unsigned long)BITS_MTH<<8 | BITS_DATE)), (uint8_t) DS1307_DOW, 4);
-	writeRegisters((uint8_t) DS1307_DATE, (byte*) &p, 3);
+	writeRegisters((uint8_t) rDate, (byte*) &p, 3);
 }
 
 byte RTC::dayOfWeek() {
@@ -233,7 +207,7 @@ float RTC::CalendarDate(float jd) {
   }
 }
 
-
+/*
 void RTC::writeRegister(byte rg, byte val) {
 	writeRegisters(rg % 0x40, (uint8_t *) &val, 1);
 }
@@ -243,16 +217,16 @@ byte RTC::readRegister(byte rg) {
 	readRegisters(rg % 0x40, (uint8_t *) &val, 1);
 	return val;
 }
-
+*/
 
 void RTC::stop(void)
 {
 	// set the ClockHalt bit high to stop the rtc
 	// this bit is part of the seconds byte
   uint8_t r;
-	readRegisters((uint8_t) DS1307_SEC, &r, 1);
-	r |= DS1307_CLOCKHALT;
-  writeRegisters(DS1307_SEC, &r, 1);
+	readRegisters((uint8_t) rSec, &r, 1);
+	r |= BIT_CLOCKHALT;
+  writeRegisters(rSec, &r, 1);
 }
 
 void RTC::start(void)
@@ -260,16 +234,15 @@ void RTC::start(void)
 	// unset the ClockHalt bit to start the rtc
 	// TODO : preserve existing seconds
   uint8_t r;
-	readRegisters((uint8_t) DS1307_SEC, &r, 1);
-	r &= ~DS1307_CLOCKHALT;
-	writeRegisters(DS1307_SEC, &r, 1);
+	readRegisters((uint8_t) rSec, &r, 1);
+	r &= ~BIT_CLOCKHALT;
+	writeRegisters(rSec, &r, 1);
 }
 
 boolean RTC::isrunning(void)
 {
   uint8_t r;
-  readRegisters((uint8_t) DS1307_SEC, &r, 1);
-  return !(r & DS1307_CLOCKHALT);
+  readRegisters((uint8_t) rSec, &r, 1);
+  return !(r & BIT_CLOCKHALT);
 }
-
 

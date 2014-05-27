@@ -1,5 +1,5 @@
 /*
- DS1307.h - library for DS1307/DS3231 i2c rtc
+ RTC.h - library for DS1307/DS3231 i2c rtc
  */
 
 // ensure this library description is only included once
@@ -21,6 +21,10 @@
 #include <Wire.h>
 #endif
 
+#if defined(MAXIM_DS1307) || defined(MAXIM_DS3231) || defined(ST_M41T62)
+#else
+#define MAXIM_DS1307
+#endif
 
 // library interface description
 class RTC {
@@ -31,32 +35,46 @@ private:
 #elif defined (ARMCMX)
 	I2CBus & wire;
 #endif
-	uint8_t chipID;
-	
+	const uint8_t rSec, rDate;
+	const uint8_t rCentiSec;
+
+public:
+	// cache
+	uint32_t time, date;
+
+private:
 	void readRegisters(byte reg, uint8_t *, byte);
 	void writeRegisters(byte reg, uint8_t *, byte);
-	void writeRegister(byte, byte);
-	byte readRegister(byte);
+//	void writeRegister(byte, byte);
+//	byte readRegister(byte);
 
 	enum {
-		M41T62_HUNDREDTHSEC = 0,
-		DS1307_SEC = 0,
-		DS1307_MIN,
-		DS1307_HR,
-		DS1307_DOW,
-		DS1307_DATE,
-		DS1307_MTH,
-		DS1307_YR
+		DS1307_REG_SEC = 0,
+		DS1307_REG_MIN,
+		DS1307_REG_HR,
+		DS1307_REG_DOW,
+		DS1307_REG_DATE,
+		DS1307_REG_MTH,
+		DS1307_REG_YR,
+
+		M41T62_REG_CENTISEC = 0,
+		M41T62_REG_SEC = 1,
+		M41T62_REG_MIN,
+		M41T62_REG_HR,
+		M41T62_REG_DOW,
+		M41T62_REG_DATE,
+		M41T62_REG_MTH,
+		M41T62_REG_YR,
 	};
 
-	static const uint8_t DS1307_CTRL_ID = B01101000; //DS1307, M41T62
+	static const uint8_t I2C_CTRL_ID = B01101000; //DS1307, M41T62
 
 	// Define register bit masks
-	static const uint8_t DS1307_CLOCKHALT = B10000000;
+	static const uint8_t BIT_CLOCKHALT = B10000000;
 
 	static const uint8_t BITS_SEC = B01111111;
-	static const uint8_t BITS_HR =  B00111111;
 	static const uint8_t BITS_MIN = B01111111;
+	static const uint8_t BITS_HR =  B00111111;
 	static const uint8_t BITS_DOW = B00000111;
 	static const uint8_t BITS_DATE =B00111111;
 	static const uint8_t BITS_MTH = B00111111;
@@ -83,23 +101,28 @@ public:
 		SUN = 0, MON, TUE, WED, THU, FRI, SAT,
 	};
 
-	enum {
-		MAXIM_DS1307 = 0,
-		MAXIM_DS3234 = 0,
-		ST_M41T62 = 1
+	enum CHIP {
+		CHIP_MAXIM_DS1307 = 0,
+		CHIP_ST_M41T62 = 1,
 	};
 
-public:
-	// cache
-	uint32_t time, date;
-
 #if defined(ARDUINO)
-	RTC(TwoWire & w, uint8_t chip = MAXIM_DS1307) : wire(w), chipID(chip), time(0), date(0) { }
+	RTC(TwoWire & w, const uint8_t chip = CHIP_MAXIM_DS1307) : wire(w), time(0), date(0),
+			rSec(chip == CHIP_ST_M41T62 ? M41T62_REG_SEC : DS1307_REG_SEC),
+			rDate(chip == CHIP_ST_M41T62 ? M41T62_REG_DATE : DS1307_REG_DATE),
+			rCentiSec(chip == CHIP_ST_M41T62 ? M41T62_REG_CENTISEC : 0xff) {
+	}
 #elif defined (ARMCMX)
-	RTC(I2CBus & w, uint8_t chip = MAXIM_DS1307) : wire(w), chipID(chip), time(0), date(0) { }
+	RTC(I2CBus & w, const uint8_t chip = CHIP_MAXIM_DS1307) : wire(w), time(0), date(0),
+			rSec(chip == CHIP_ST_M41T62 ? M41T62_REG_SEC : DS1307_REG_SEC),
+			rDate(chip == CHIP_ST_M41T62 ? M41T62_REG_DATE : DS1307_REG_DATE),
+			rCentiSec(chip == CHIP_ST_M41T62 ? M41T62_REG_CENTISEC : 0xff) { }
 #endif
 
-	RTC(uint8_t chip = MAXIM_DS1307) : wire(Wire), chipID(chip), time(0), date(0) {	}
+	RTC(const uint8_t chip = CHIP_MAXIM_DS1307) : wire(Wire), time(0), date(0),
+			rSec(chip == CHIP_ST_M41T62 ? M41T62_REG_SEC : DS1307_REG_SEC),
+			rDate(chip == CHIP_ST_M41T62 ? M41T62_REG_DATE : DS1307_REG_DATE),
+			rCentiSec(chip == CHIP_ST_M41T62 ? M41T62_REG_CENTISEC : 0xff) {	}
 
 	void init() {
 		start();
@@ -112,7 +135,7 @@ public:
 
   // returns true if the value is changed from time/cal.
 	boolean updateTime();
-	boolean update(); // both time and calendar date.
+	virtual boolean update(); // both time and calendar date.
 
 	byte getSeconds();
 //		byte* getTimestamp(byte* );
@@ -164,6 +187,7 @@ public:
 	byte second() { return BCD2uint32(time & 0xff); }
 
 };
+
 
 #endif
 

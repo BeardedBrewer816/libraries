@@ -21,7 +21,7 @@ const char RTC::NameOfMonth[]=
 #endif
 
 
-uint32_t RTC::BCD2uint32(uint32_t d) {
+uint32_t RTC::BCD2uint(uint32_t d) {
 	uint32_t t;
 	t = d>>28 & 0x0f;
 	t *= 10;
@@ -38,6 +38,26 @@ uint32_t RTC::BCD2uint32(uint32_t d) {
 	t += d>>4 & 0x0f;
 	t *= 10;
 	t += d & 0x0f;
+	return t;
+}
+
+uint32_t RTC::uint2BCD(uint32_t b) {
+	uint32_t t;
+	t = b % 10;
+	b /= 10;
+	t |= (b%10)<<4;
+	b /= 10;
+	t |= (b%10)<<8;
+	b /= 10;
+	t |= (b%10)<<12;
+	b /= 10;
+	t |= (b%10)<<16;
+	b /= 10;
+	t |= (b%10)<<20;
+	b /= 10;
+	t |= (b%10)<<24;
+	b /= 10;
+	t |= (b%10)<<28;
 	return t;
 }
 
@@ -92,13 +112,12 @@ boolean RTC::updateTime() {
 }
 
 boolean RTC::update() {
-	uint8_t tmp[4];
+	uint8_t tmp[8];
 	uint32_t t_date;
 	uint32_t t_time;
-	readRegisters((byte) rSec, (byte *) tmp, 3);
+	readRegisters((byte) rSec, (byte *) tmp, 7);
 	t_time = (tmp[0] & BITS_SEC) | uint32_t(tmp[1] & BITS_MIN)<<8 | uint32_t(tmp[2] & BITS_HR)<<16;
-	readRegisters((byte) rDate, (byte *) tmp, 3);
-	t_date = (tmp[0] & BITS_DATE) | uint32_t(tmp[1] & BITS_MTH)<<8 | uint32_t(tmp[2] & BITS_YR)<<16;
+	t_date = (tmp[4] & BITS_DATE) | uint32_t(tmp[5] & BITS_MTH)<<8 | uint32_t(tmp[6] & BITS_YR)<<16;
 	if ( t_date != date || t_time != time ) {
 		time = t_time;
 		date = t_date;
@@ -111,6 +130,12 @@ uint8_t RTC::getSeconds() {
 	uint8_t sec;
 	readRegisters((byte) rSec, (byte *) &sec, 1);
 	return sec & BITS_SEC;
+}
+
+uint8_t RTC::getCentiSeconds() {
+	uint8_t sec;
+	readRegisters((byte) rCentiSec, (byte *) &sec, 1);
+	return sec;
 }
 
 void RTC::setTime(const long & p) {

@@ -35,8 +35,7 @@ private:
 #elif defined (ARMCMX)
 	I2CBus & wire;
 #endif
-	const uint8_t rSec, rDate;
-	const uint8_t rCentiSec;
+	uint8_t rSec, rDate, rCentiSec;
 
 public:
 	// cache
@@ -45,8 +44,6 @@ public:
 private:
 	void readRegisters(byte reg, uint8_t *, byte);
 	void writeRegisters(byte reg, uint8_t *, byte);
-//	void writeRegister(byte, byte);
-//	byte readRegister(byte);
 
 	enum {
 		DS1307_REG_SEC = 0,
@@ -107,27 +104,49 @@ public:
 	};
 
 #if defined(ARDUINO)
-	RTC(TwoWire & w, const uint8_t chip = CHIP_MAXIM_DS1307) : wire(w), time(0), date(0),
-			rSec(chip == CHIP_ST_M41T62 ? M41T62_REG_SEC : DS1307_REG_SEC),
-			rDate(chip == CHIP_ST_M41T62 ? M41T62_REG_DATE : DS1307_REG_DATE),
-			rCentiSec(chip == CHIP_ST_M41T62 ? M41T62_REG_CENTISEC : 0xff) {
+	RTC(TwoWire & w, const uint8_t chip = CHIP_MAXIM_DS1307) : wire(w), time(0), date(0) {
+		if ( chip == CHIP_ST_M41T62 ) {
+			rSec = M41T62_REG_SEC;
+			rDate = M41T62_REG_DATE;
+			rCentiSec = M41T62_REG_CENTISEC;
+		} else {
+			rSec = DS1307_REG_SEC;
+			rDate = DS1307_REG_DATE;
+			rCentiSec = 0xff;
+		}
 	}
 #elif defined (ARMCMX)
-	RTC(I2CBus & w, const uint8_t chip = CHIP_MAXIM_DS1307) : wire(w), time(0), date(0),
-			rSec(chip == CHIP_ST_M41T62 ? M41T62_REG_SEC : DS1307_REG_SEC),
-			rDate(chip == CHIP_ST_M41T62 ? M41T62_REG_DATE : DS1307_REG_DATE),
-			rCentiSec(chip == CHIP_ST_M41T62 ? M41T62_REG_CENTISEC : 0xff) { }
+	RTC(I2CBus & w, const uint8_t chip = CHIP_MAXIM_DS1307) : wire(w), time(0), date(0) {
+		if ( chip == CHIP_ST_M41T62 ) {
+			rSec = M41T62_REG_SEC;
+			rDate = M41T62_REG_DATE;
+			rCentiSec = M41T62_REG_CENTISEC;
+		} else {
+			rSec = DS1307_REG_SEC;
+			rDate = DS1307_REG_DATE;
+			rCentiSec = 0xff;
+		}
+	}
 #endif
 
-	RTC(const uint8_t chip = CHIP_MAXIM_DS1307) : wire(Wire), time(0), date(0),
-			rSec(chip == CHIP_ST_M41T62 ? M41T62_REG_SEC : DS1307_REG_SEC),
-			rDate(chip == CHIP_ST_M41T62 ? M41T62_REG_DATE : DS1307_REG_DATE),
-			rCentiSec(chip == CHIP_ST_M41T62 ? M41T62_REG_CENTISEC : 0xff) {	}
+	RTC(const uint8_t chip = CHIP_MAXIM_DS1307) : wire(Wire), time(0), date(0) {
+		if ( chip == CHIP_ST_M41T62 ) {
+			rSec = M41T62_REG_SEC;
+			rDate = M41T62_REG_DATE;
+			rCentiSec = M41T62_REG_CENTISEC;
+		} else {
+			rSec = DS1307_REG_SEC;
+			rDate = DS1307_REG_DATE;
+			rCentiSec = 0xff;
+		}
+	}
 
 	void init() {
 		start();
 	}
 	bool begin() {
+		if ( isrunning() )
+			return true;
 		start();
 		return true;
 	}
@@ -138,6 +157,7 @@ public:
 	virtual boolean update(); // both time and calendar date.
 
 	byte getSeconds();
+	byte getCentiSeconds();
 //		byte* getTimestamp(byte* );
 	void setTime(const long &);
 	void setCalendar(const long &);
@@ -178,13 +198,15 @@ public:
 	  return buf;
   }
 
-  static uint32_t BCD2uint32(uint32_t);
-	word year() { return 2000+BCD2uint32(date>>16 & 0xff); }
-	byte month() { return BCD2uint32(date>>8 & 0xff); }
-	byte day() { return BCD2uint32(date & 0xff); }
-	byte hour() { return BCD2uint32(time>>16 & 0xff); }
-	byte minute() { return BCD2uint32(time>>8 & 0xff); }
-	byte second() { return BCD2uint32(time & 0xff); }
+  static uint32_t BCD2uint(uint32_t);
+  static uint32_t uint2BCD(uint32_t);
+
+  word year() { return 2000+BCD2uint(date>>16 & 0xff); }
+  byte month() { return BCD2uint(date>>8 & 0xff); }
+  byte day() { return BCD2uint(date & 0xff); }
+  byte hour() { return BCD2uint(time>>16 & 0xff); }
+  byte minute() { return BCD2uint(time>>8 & 0xff); }
+  byte second() { return BCD2uint(time & 0xff); }
 
 };
 

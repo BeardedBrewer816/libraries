@@ -7,154 +7,164 @@
  *
  */
 
-#include <WProgram.h>
+#include <Ardunino.h>
 #include <Wire.h>
 #include "BoschBMP085.h"
 
-BoschBMP085::BoschBMP085() {
-	oss = 3;
-}
 
-void  BoschBMP085::calibrate() {
-//  Serial.println("Reading Calibration Data");
-  ac1 = read_register_word(0xAA);
-//  Serial.print("AC1: ");
-//  Serial.println(ac1,DEC);
-  ac2 = read_register_word(0xAC);
-//  Serial.print("AC2: ");
-//  Serial.println(ac2,DEC);
-  ac3 = read_register_word(0xAE);
-//  Serial.print("AC3: ");
-//  Serial.println(ac3,DEC);
-  ac4 = read_register_word(0xB0);
-//  Serial.print("AC4: ");
-//  Serial.println(ac4,DEC);
-  ac5 = read_register_word(0xB2);
-//  Serial.print("AC5: ");
-//  Serial.println(ac5,DEC);
-  ac6 = read_register_word(0xB4);
-//  Serial.print("AC6: ");
-//  Serial.println(ac6,DEC);
-  b1 = read_register_word(0xB6);
-//  Serial.print("B1: ");
-//  Serial.println(b1,DEC);
-  b2 = read_register_word(0xB8);
-//  Serial.print("B2: ");
-//  Serial.println(b1,DEC);
-  mb = read_register_word(0xBA);
-//  Serial.print("MB: ");
-//  Serial.println(mb,DEC);
-  mc = read_register_word(0xBC);
-//  Serial.print("MC: ");
-//  Serial.println(mc,DEC);
-  md = read_register_word(0xBE);
-//  Serial.print("MD: ");
-//  Serial.println(md,DEC);
-}
-
-word BoschBMP085::read_register_word(byte r)
+// Stores all of the bmp085's calibration values into global variables
+// Calibration values are required to calculate temp and pressure
+// This function should be called at the beginning of the program
+void BoschBMP085::calibrate()
 {
-	word msb;
-	byte lsb;
-	
-	Wire.beginTransmission(i2cAddress);
-	Wire.send(r);  // register to read
-	Wire.endTransmission();
-	
-	Wire.requestFrom(i2cAddress, 2); // read a byte
-	while(!Wire.available()) {
-		// waiting
-	}
-	msb = Wire.receive();
-	while(!Wire.available()) {
-		// waiting
-	}
-	lsb = Wire.receive();
-	return (msb<<8) | lsb;
+  ac1 = readInt(0xAA);
+  ac2 = readInt(0xAC);
+  ac3 = readInt(0xAE);
+  ac4 = (uint16_t)readInt(0xB0);
+  ac5 = (uint16_t)readInt(0xB2);
+  ac6 = (uint16_t)readInt(0xB4);
+  b1 = readInt(0xB6);
+  b2 = readInt(0xB8);
+  mb = readInt(0xBA);
+  mc = readInt(0xBC);
+  md = readInt(0xBE);
 }
 
-
-void BoschBMP085::write_register(byte r, byte v)
+// Calculate temperature given ut.
+// Value returned will be in units of 0.1 deg C
+int BoschBMP085::getTemperature()
 {
-	Wire.beginTransmission(i2cAddress);
-	Wire.send(r);
-	Wire.send(v);
-	Wire.endTransmission();
+  long x1, x2;
+
+  x1 = (((long)ut - (long)ac6)*(long)ac5) >> 15;
+  x2 = ((long)mc << 11)/(x1 + md);
+  b5 = x1 + x2;
+
+  return ((b5 + 8)>>4);
 }
 
+// Calculate pressure given up
+// calibration values must be known
+// b5 is also required so bmp085GetTemperature(...) must be called first.
+// Value returned will be pressure in units of Pa.
+long BoschBMP085::getPressure()
+{
+  long x1, x2, x3, b3, b6, p;
+  unsigned long b4, b7;
 
+  b6 = b5 - 4000;
+  // Calculate B3
+  x1 = (b2 * (b6 * b6)>>12)>>11;
+  x2 = (ac2 * b6)>>11;
+  x3 = x1 + x2;
+  b3 = (((((long)ac1)*4 + x3)<<oss) + 2)>>2;
 
-void BoschBMP085::sensor_read() {
-	int  ut= read_ut();
-	unsigned long up = read_up();
-	up = read_up();
-	long x1, x2, x3, b3, b5, b6, p;
-	unsigned long b4, b7;
-	
-	//calculate the temperature
-	x1 = (((long)ut - ac6) * ac5) >> 15;
-	x2 = ((long) mc << 11) / (x1 + md);
-	b5 = x1 + x2;
-	temp = (b5 + 8) >> 4;
-		
-	b6 = b5 - 4000;
-	x1 = (b2 * ((b6 * b6) >> 12)) >> 11;
-	x2 = (ac2 * b6) >> 11;
-	x3 = x1 + x2;
-	b3 = ((((long)ac1 * 4 + x3)<<oss) + 2)/4;
-	x1 = (ac3 * b6) >> 13;
-	x2 = (b1 * ((b6 * b6) >> 12)) >> 16;
-	x3 = ((x1 + x2) + 2) >> 2;
-	b4 = (ac4 * (unsigned long) (x3 + 0x8000L)) >> 15;
-	b7 = ((unsigned long) up - b3) * (50000 >> oss);
-	p = b7 < 0x80000000 ? (b7 *2)/b4 : (b7 / b4) * 2;
-	x1 = (p >> 8); x1 *= x1;
-	x1 = (x1 * 3038) >> 16;
-	x2 = (-7357 * p) >> 16;
-//	Serial.print("; p=");
-//	Serial.println(p);
-	press = p + ((x1 + x2 + 3791) >> 4);
-	
+  // Calculate B4
+  x1 = (ac3 * b6)>>13;
+  x2 = (b1 * ((b6 * b6)>>12))>>16;
+  x3 = ((x1 + x2) + 2)>>2;
+  b4 = (ac4 * (unsigned long)(x3 + 32768))>>15;
+
+  b7 = ((unsigned long)(up - b3) * (50000>>oss));
+  if (b7 < 0x80000000)
+    p = (b7<<1)/b4;
+  else
+    p = (b7/b4)<<1;
+
+  x1 = (p>>8) * (p>>8);
+  x1 = (x1 * 3038)>>16;
+  x2 = (-7357 * p)>>16;
+  p += (x1 + x2 + 3791)>>4;
+
+  return p;
 }
 
+// Read 1 byte from the BMP085 at 'address'
+byte BoschBMP085::read(byte reg)
+{
+  unsigned char data;
 
+  Wire.beginTransmission(BMP085_ADDRESS);
+  Wire.write(reg);
+  Wire.endTransmission();
 
-int BoschBMP085::read_ut() {
-	write_register(0xf4,0x2e);
-	delay(5); //longer than 4.5 ms
-	return read_register_word(0xf6);
+  Wire.requestFrom(BMP085_ADDRESS, (uint8_t)1);
+  while(!Wire.available())
+    ;
+
+  return Wire.read();
 }
 
+// Read 2 bytes from the BMP085
+// First byte will be from 'address'
+// Second byte will be from 'address'+1
+int BoschBMP085::readInt(byte reg)
+{
+  unsigned char msb, lsb;
 
-unsigned long BoschBMP085::read_up() {
-	static byte pressure_wait_ms[4] = { 5, 8, 14, 26 };
+  Wire.beginTransmission(BMP085_ADDRESS);
+  Wire.write(reg);
+  Wire.endTransmission();
 
-	write_register(0xf4,0x34+(oss<<6));
-	delay(2*pressure_wait_ms[oss]);
-	
-	long msb;
-	byte lsb, xlsb;
-	Wire.beginTransmission(i2cAddress);
-	Wire.send(0xf6);  // register to read
-	Wire.endTransmission();
-	
-	Wire.requestFrom(i2cAddress, 3); // read a byte
-	while(!Wire.available()) {
-		// waiting
-	}
-	msb = Wire.receive();
-	while(!Wire.available()) {
-		// waiting
-	}
-	lsb = Wire.receive();
-	while(!Wire.available()) {
-		// waiting
-	}
-	xlsb = Wire.receive();
-//	Serial.print("raw p: ");
-//	Serial.println(((msb<<16) | (lsb<<8) | xlsb) >> (8 - oss), DEC);
-//	Serial.print(" [");
-//	Serial.print(((msb<<16) | (lsb<<8) | xlsb) >> (8 - oss), HEX);
-//	Serial.println(" ]");
-	return ((msb<<16) | (lsb<<8) | xlsb) >>(8-oss);
+  Wire.requestFrom(BMP085_ADDRESS, (uint8_t)2);
+  while(Wire.available()<2)
+    ;
+  msb = Wire.read();
+  lsb = Wire.read();
+
+  return (int) msb<<8 | lsb;
+}
+
+byte BoschBMP085::write(byte reg, byte val) {
+	Wire.beginTransmission(BMP085_ADDRESS);
+	Wire.write(reg);
+	Wire.write(val);
+	return Wire.endTransmission();
+}
+// Read the uncompensated temperature value
+unsigned int BoschBMP085::readUT()
+{
+  unsigned int ut;
+
+  // Write 0x2E into Register 0xF4
+  // This requests a temperature reading
+  write(0xf4, 0x2e);
+
+  // Wait at least 4.5ms
+  delay(5);
+
+  // Read two bytes from registers 0xF6 and 0xF7
+  ut = readInt(0xF6);
+  return ut;
+}
+
+// Read the uncompensated pressure value
+unsigned long BoschBMP085::readUP()
+{
+  unsigned char msb, lsb, xlsb;
+  unsigned long up = 0;
+
+  // Write 0x34+(OSS<<6) into register 0xF4
+  // Request a pressure reading w/ oversampling setting
+  write(0xF4, 0x34 + (oss<<6));
+
+  // Wait for conversion, delay time dependent on OSS
+  delay(2 + (3<<oss));
+
+  // Read register 0xF6 (MSB), 0xF7 (LSB), and 0xF8 (XLSB)
+  Wire.beginTransmission(BMP085_ADDRESS);
+  Wire.write(0xF6);
+  Wire.endTransmission();
+  Wire.requestFrom(BMP085_ADDRESS, (uint8_t)3);
+
+  // Wait for data to become available
+  while(Wire.available() < 3)
+    ;
+  msb = Wire.read();
+  lsb = Wire.read();
+  xlsb = Wire.read();
+
+  up = (((unsigned long) msb << 16) | ((unsigned long) lsb << 8) | (unsigned long) xlsb) >> (8-oss);
+
+  return up;
 }

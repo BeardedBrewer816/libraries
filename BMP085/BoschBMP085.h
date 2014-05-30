@@ -7,11 +7,15 @@
  *
  */
 
+#include <Arduino.h>
+
 class BoschBMP085 {
 //	static int pressure_wait_ms[4] = { 5, 8, 14, 26 };
 	static const int i2cAddress = 0x77;
+	const static uint8_t BMP085_ADDRESS = 0x77;  // I2C address of BMP085
 
 	byte oss;
+
 	//just taken from the BMP085 datasheet
 	int ac1;
 	int ac2; 
@@ -24,24 +28,31 @@ class BoschBMP085 {
 	int mb;
 	int mc;
 	int md;
+	long b5;
 
-	int temp;
-	long press;
 public:
-	BoschBMP085();
-	
+	int ut;
+	long up;
+
+private:
+	byte read(byte r);
+	int readInt(byte r);
+	byte write(byte r, byte v);
+
+public:
+	BoschBMP085() : oss(3) { }
+
+	boolean begin() {
+		calibrate();
+		return true;
+	}
+
 	void calibrate();
-	word read_register_word(byte r);
-	void write_register(byte r, byte v);
-	void sensor_read();
-	int read_ut();
-	unsigned long read_up();
-	
-	int temperature() {
-		return temp;
-	}
-	long pressure() {
-		return press;
-	}
+//	void update() { readUT(); readUP(); }
+	unsigned int readUT();
+	unsigned long readUP();
+	int getTemperature();
+	long getPressure();
+
 };
 

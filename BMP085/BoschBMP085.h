@@ -11,10 +11,9 @@
 
 class BoschBMP085 {
 //	static int pressure_wait_ms[4] = { 5, 8, 14, 26 };
-	static const int i2cAddress = 0x77;
-	const static uint8_t BMP085_ADDRESS = 0x77;  // I2C address of BMP085
 
-	byte oss;
+	static const uint8_t BMP085_ADDRESS = 0x77;  // I2C address of BMP085
+	static const uint8_t OSS = 0;
 
 	//just taken from the BMP085 datasheet
 	int ac1;
@@ -31,28 +30,28 @@ class BoschBMP085 {
 	long b5;
 
 public:
-	int ut;
+	short ut;
 	long up;
 
 private:
-	byte read(byte r);
+	char read(byte r);
 	int readInt(byte r);
-	byte write(byte r, byte v);
+//	byte write(byte r, byte v);
+	void calibrate();
 
 public:
-	BoschBMP085() : oss(3) { }
+	BoschBMP085() { }
 
 	boolean begin() {
 		calibrate();
 		return true;
 	}
 
-	void calibrate();
-//	void update() { readUT(); readUP(); }
+	short temperature();
+	long pressure();
+
 	unsigned int readUT();
 	unsigned long readUP();
-	int getTemperature();
-	long getPressure();
 
 };
 

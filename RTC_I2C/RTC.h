@@ -21,11 +21,6 @@
 #include <Wire.h>
 #endif
 
-#if defined(MAXIM_DS1307) || defined(MAXIM_DS3231) || defined(ST_M41T62)
-#else
-#define MAXIM_DS1307
-#endif
-
 // library interface description
 class RTC {
 	// library-accessible "private" interface
@@ -64,7 +59,7 @@ private:
 		M41T62_REG_YR,
 	};
 
-	static const uint8_t I2C_CTRL_ID = B01101000; //DS1307, M41T62
+	static const uint8_t I2C_CTRL_ID = B1101000; //DS1307, M41T62
 
 	// Define register bit masks
 	static const uint8_t BIT_CLOCKHALT = B10000000;
@@ -154,7 +149,7 @@ public:
 
   // returns true if the value is changed from time/cal.
 	boolean updateTime();
-	virtual boolean update(); // both time and calendar date.
+	boolean update(); // both time and calendar date.
 
 	byte getSeconds();
 	byte getCentiSeconds();

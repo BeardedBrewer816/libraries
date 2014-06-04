@@ -9,26 +9,26 @@ HMC5843::HMC5843() {
 // note that you need to wait at least 5ms after power on to initialize
 void HMC5843::begin(const uint8_t gain, const uint8_t mode) {
 	Wire.beginTransmission(HMC5843_ID);
-	Wire.send(CRB);
-	Wire.send(gain);
+	Wire.write(CRB);
+	Wire.write(gain);
 	//	Wire.endTransmission();
 	//	Wire.beginTransmission(HMC5843_ID);
 	//	Wire.send(MR);
-	Wire.send(mode);
+	Wire.write(mode);
 	Wire.endTransmission();	
 }
 
 void HMC5843::mode(const uint8_t mode) {
 	Wire.beginTransmission(HMC5843_ID);
-	Wire.send(MR);
-	Wire.send(mode);
+	Wire.write(MR);
+	Wire.write(mode);
 	Wire.endTransmission();	
 }
 
 void HMC5843::gain(const uint8_t gain) {
 	Wire.beginTransmission(HMC5843_ID);
-	Wire.send(CRB);
-	Wire.send(gain);
+	Wire.write(CRB);
+	Wire.write(gain);
 	Wire.endTransmission();	
 }
 
@@ -56,16 +56,16 @@ void HMC5843::measured(int & x, int & y, int & z) {
 	unsigned char xh, xl, yh, yl, zh, zl;
 	
 	Wire.beginTransmission(HMC5843_ID);
-	Wire.send(DOXMR);
+	Wire.write(DOXMR);
 	Wire.endTransmission();	
 
 	Wire.requestFrom(HMC5843_ID, (uint8_t)7);
-	xh = Wire.receive();
-	xl = Wire.receive();
-	yh = Wire.receive();
-	yl = Wire.receive();
-	zh = Wire.receive();
-	zl = Wire.receive();
+	xh = Wire.read();
+	xl = Wire.read();
+	yh = Wire.read();
+	yl = Wire.read();
+	zh = Wire.read();
+	zl = Wire.read();
 //	Wire.endTransmission();
 	x = xh<<8 | xl;
 	y = yh<<8 | yl;

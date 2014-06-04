@@ -22,6 +22,7 @@ class MPU9150 {
 public:
 	uint8_t raw[14];
 	uint16_t accel_lsb_mg;
+	uint16_t gyro_lsb_deg;
 
 	enum ACCEL_CONFIG {
 		REGISTER_ACCEL_CONFIG = 0x1C,
@@ -59,9 +60,9 @@ public:
 	float accX() { return float((static_cast<int16_t>(raw[0])<<8) + raw[1])/accel_lsb_mg; }
 	float accY() { return float((static_cast<int16_t>(raw[2])<<8) + raw[3])/accel_lsb_mg; }
 	float accZ() { return float((static_cast<int16_t>(raw[4])<<8) + raw[5])/accel_lsb_mg; }
-	float gyroX() { return float((static_cast<int16_t>(raw[8])<<8) + raw[9]); }
-	float gyroY() { return float((static_cast<int16_t>(raw[10])<<8) + raw[11]); }
-	float gyroZ() { return float((static_cast<int16_t>(raw[12])<<8) + raw[13]); }
+	float gyroX() { return float((static_cast<int16_t>(raw[8])<<8) + raw[9])/gyro_lsb_deg; }
+	float gyroY() { return float((static_cast<int16_t>(raw[10])<<8) + raw[11])/gyro_lsb_deg; }
+	float gyroZ() { return float((static_cast<int16_t>(raw[12])<<8) + raw[13])/gyro_lsb_deg; }
 };
 
 

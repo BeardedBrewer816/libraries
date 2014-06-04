@@ -87,16 +87,20 @@ void MPU9150::configGyro(const uint16_t range) {
 	switch(range) {
 	case 250:
 		val = FS_SEL_250;
+		gyro_lsb_deg = 250;
 		break;
 	case 500:
 		val = FS_SEL_500;
+		gyro_lsb_deg = 500;
 		break;
 	case 1000:
 		val = FS_SEL_1000;
+		gyro_lsb_deg = 1000;
 		break;
 	case 2000:
 	default:
 		val = FS_SEL_2000;
+		gyro_lsb_deg = 2000;
 		break;
 	}
 	writeRegister(REGISTER_GYRO_CONFIG, val);

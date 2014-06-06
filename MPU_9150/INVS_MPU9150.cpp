@@ -7,12 +7,13 @@
 
 #include <INVS_MPU9150.h>
 
-boolean MPU9150::begin(void) {
+//	boolean begin(int axcfg, int axhpf, int gycfg);
+boolean MPU9150::begin(int axrange, int axhpf, int gyrange) {
 	if( readRegister(0x75) == 0x68 ) {
 		// wake up AX, GY
 		wakeUp();
-		configAccel(2,1);
-		configGyro(250);
+		configAccel(axrange,axhpf);
+		configGyro(gyrange);
 		return true;
 	}
 	return false;
@@ -58,52 +59,42 @@ void MPU9150::writeRegister(uint8_t subAddress, uint8_t val) {
 }
 
 
-void MPU9150::configAccel(const uint8_t range, const uint8_t hpf) {
-	uint8_t val = 0;
+void MPU9150::configAccel(const int range, const int hpf) {
 	switch(range) {
-	case 2:
-		val = AFS_SEL_2g;
+	case AFS_SEL_2g:
 		accel_lsb_mg = 16384;
 		break;
-	case 4:
-		val = AFS_SEL_4g;
+	case AFS_SEL_4g:
 		accel_lsb_mg = 8192;
 		break;
-	case 8:
-		val = AFS_SEL_8g;
+	case AFS_SEL_8g:
 		accel_lsb_mg = 4096;
 		break;
-	case 16:
+	case AFS_SEL_16g:
 	default:
-		val = AFS_SEL_16g;
 		accel_lsb_mg = 2048;
 		break;
 	}
-	writeRegister(REGISTER_ACCEL_CONFIG, val);
+	writeRegister(REGISTER_ACCEL_CONFIG, range | hpf);
 }
 
-void MPU9150::configGyro(const uint16_t range) {
-	uint8_t val = 0;
+void MPU9150::configGyro(const int range) {
 	switch(range) {
-	case 250:
-		val = FS_SEL_250;
+	case FS_SEL_250:
 		gyro_lsb_deg = 250;
 		break;
-	case 500:
-		val = FS_SEL_500;
+	case FS_SEL_500:
 		gyro_lsb_deg = 500;
 		break;
-	case 1000:
-		val = FS_SEL_1000;
+	case FS_SEL_1000:
 		gyro_lsb_deg = 1000;
 		break;
-	case 2000:
+	case FS_SEL_2000:
 	default:
-		val = FS_SEL_2000;
 		gyro_lsb_deg = 2000;
 		break;
 	}
-	writeRegister(REGISTER_GYRO_CONFIG, val);
+	writeRegister(REGISTER_GYRO_CONFIG, range);
 }
 
 void MPU9150::readAGvalue(void) {

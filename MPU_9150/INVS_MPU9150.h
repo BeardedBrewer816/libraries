@@ -19,10 +19,11 @@ class MPU9150 {
 	void readRegister(uint8_t, uint8_t *, uint8_t);
 	void writeRegister(uint8_t, uint8_t);
 
-public:
 	uint8_t raw[14];
 	uint16_t accel_lsb_mg;
 	uint16_t gyro_lsb_deg;
+
+public:
 
 	enum ACCEL_CONFIG {
 		REGISTER_ACCEL_CONFIG = 0x1C,
@@ -47,14 +48,13 @@ public:
 		FS_SEL_2000 = 3<<3,
 	};
 
-
 	MPU9150(const int ad0 = 1) : I2C_Addr( 0x68 | (ad0 & 1) )  { }
 
-	boolean begin(void);
+	boolean begin(int axcfg, int axhpf, int gycfg);
 	void wakeUp(void);
 
-	void configAccel(const uint8_t range, const uint8_t hpf);
-	void configGyro(const uint16_t range);
+	void configAccel(const int range, const int hpf);
+	void configGyro(const int range);
 	void readAGvalue();
 
 	float accX() { return float((static_cast<int16_t>(raw[0])<<8) + raw[1])/accel_lsb_mg; }

@@ -9,9 +9,14 @@
 
 //	boolean begin(int axcfg, int axhpf, int gycfg);
 boolean MPU9150::begin(int axrange, int axhpf, int gyrange) {
-	if( readRegister(0x75) == 0x68 ) {
+	accessMPU();
+	if ( readRegister(0x75) == 0x68 ) {
 		// wake up AX, GY
 		wakeUp();
+		accessAKM();
+		if ( readRegister(0x00) != AKM_WIA_ID )
+			return false;
+		readRegister(AKM_REG_ASAX, magadj, 3);
 		configAccel(axrange,axhpf);
 		configGyro(gyrange);
 		return true;
@@ -20,6 +25,7 @@ boolean MPU9150::begin(int axrange, int axhpf, int gyrange) {
 }
 
 void MPU9150::wakeUp() {
+	accessMPU();
 	writeRegister(0x6B, 0x00);
 	writeRegister(0x37, 0x02);
 }
@@ -27,10 +33,10 @@ void MPU9150::wakeUp() {
 uint8_t MPU9150::readRegister(uint8_t subAddress) {
 	uint8_t data;
 
-	Wire.beginTransmission(I2C_Addr);
+	Wire.beginTransmission(i2c_addr);
 	Wire.write(subAddress);
 	Wire.endTransmission(false);
-	Wire.requestFrom(I2C_Addr, (uint8_t) 1);
+	Wire.requestFrom(i2c_addr, (uint8_t) 1);
 	while (Wire.available() < 1) // Wait until data becomes available
 		;
 	data = Wire.read(); // Read register data into `data` variable
@@ -40,10 +46,10 @@ uint8_t MPU9150::readRegister(uint8_t subAddress) {
 }
 
 void MPU9150::readRegister(uint8_t subAddress, uint8_t * dest, uint8_t count) {
-	Wire.beginTransmission(I2C_Addr);
+	Wire.beginTransmission(i2c_addr);
 	Wire.write(subAddress);
 	Wire.endTransmission(false);
-	Wire.requestFrom(I2C_Addr, count);
+	Wire.requestFrom(i2c_addr, count);
 	while (Wire.available() < count)
 		;
 	for (int i=0; i<count ;i++)
@@ -52,12 +58,11 @@ void MPU9150::readRegister(uint8_t subAddress, uint8_t * dest, uint8_t count) {
 }
 
 void MPU9150::writeRegister(uint8_t subAddress, uint8_t val) {
-	Wire.beginTransmission(I2C_Addr);
+	Wire.beginTransmission(i2c_addr);
 	Wire.write(subAddress);
 	Wire.write(val);
 	Wire.endTransmission(); // End I2C transmission
 }
-
 
 void MPU9150::configAccel(const int range, const int hpf) {
 	switch(range) {
@@ -75,6 +80,7 @@ void MPU9150::configAccel(const int range, const int hpf) {
 		accel_lsb_mg = 2048;
 		break;
 	}
+	accessMPU();
 	writeRegister(REGISTER_ACCEL_CONFIG, range | hpf);
 }
 
@@ -94,12 +100,32 @@ void MPU9150::configGyro(const int range) {
 		gyro_lsb_deg = 2000;
 		break;
 	}
+	accessMPU();
 	writeRegister(REGISTER_GYRO_CONFIG, range);
 }
 
-void MPU9150::readAGvalue(void) {
-	readRegister(0x3b, raw, 14);
+void MPU9150::getAccelGyro(void) {
+	accessMPU();
+	readRegister(0x3b, agraw, 14);
 	return;
 }
 
+void MPU9150::measureCompass(void) {
+	accessAKM();
+	writeRegister(AKM_REG_CNTL, AKM_CNTL_SINGLEMEASUREMENT);
+//	memset(magraw, 0, 6);
+	return;
+}
 
+boolean MPU9150::getCompass(void) {
+	accessAKM();
+	readRegister(AKM_REG_HXL, magraw, 7);
+	if ( magraw[6] != 0 )
+		return false;
+	return true;
+}
+
+boolean MPU9150::compassDRDY() {
+	accessAKM();
+	return readRegister(AKM_REG_ST1) == AKM_ST1_DRDY;
+}

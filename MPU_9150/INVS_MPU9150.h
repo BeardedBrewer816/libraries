@@ -12,14 +12,21 @@
 #include <Wire.h>
 
 class MPU9150 {
-	const uint8_t I2C_Addr; // selectable by AD0 pin.
-	static const uint8_t I2C_COMPASS_ADDR = 0x0c;
+	const uint8_t I2C_MPU_ADDR; // selectable by AD0 pin.
+	static const uint8_t I2C_AK8975_ADDR = 0x0C;
+	uint8_t i2c_addr;
+
+	void accessMPU() { i2c_addr = I2C_MPU_ADDR; }
+	uint8_t accessAKM() { i2c_addr = I2C_AK8975_ADDR; }
 
 	uint8_t readRegister(uint8_t);
 	void readRegister(uint8_t, uint8_t *, uint8_t);
 	void writeRegister(uint8_t, uint8_t);
 
-	uint8_t raw[14];
+public:
+	uint8_t agraw[14];
+	uint8_t magraw[7];
+	uint8_t magadj[3];
 	uint16_t accel_lsb_mg;
 	uint16_t gyro_lsb_deg;
 
@@ -48,22 +55,48 @@ public:
 		FS_SEL_2000 = 3<<3,
 	};
 
-	MPU9150(const int ad0 = 1) : I2C_Addr( 0x68 | (ad0 & 1) )  { }
+	enum AK8975_CONST {
+		AKM_REG_WIA = 0x00,
+		AKM_REG_ST1 = 0x02,
+		AKM_REG_HXL = 0x03,
+		AKM_REG_ST2 = 0x09,
+		AKM_REG_CNTL = 0x0A,
+		AKM_REG_ASAX = 0x10,
+
+		AKM_WIA_ID = 0x48,
+		AKM_ST1_DRDY = 1,
+		AKM_ST2_DERR = 4,
+		AKM_ST2_OVFR = 8,
+		AKM_CNTL_POWERDOWN = 0,
+		AKM_CNTL_SINGLEMEASUREMENT = 1,
+	};
+
+	MPU9150(const int ad0 = 1) : I2C_MPU_ADDR( 0x68 | (ad0 & 1) )  {
+		i2c_addr = I2C_MPU_ADDR;
+	}
 
 	boolean begin(int axcfg, int axhpf, int gycfg);
 	void wakeUp(void);
 
 	void configAccel(const int range, const int hpf);
 	void configGyro(const int range);
-	void readAGvalue();
+	//
+	void getAccelGyro();
+	boolean getCompass();
+	void measureCompass();
+	boolean compassDRDY();
 
-	float accX() { return float((static_cast<int16_t>(raw[0])<<8) + raw[1])/accel_lsb_mg; }
-	float accY() { return float((static_cast<int16_t>(raw[2])<<8) + raw[3])/accel_lsb_mg; }
-	float accZ() { return float((static_cast<int16_t>(raw[4])<<8) + raw[5])/accel_lsb_mg; }
-	float gyroX() { return float((static_cast<int16_t>(raw[8])<<8) + raw[9])/gyro_lsb_deg; }
-	float gyroY() { return float((static_cast<int16_t>(raw[10])<<8) + raw[11])/gyro_lsb_deg; }
-	float gyroZ() { return float((static_cast<int16_t>(raw[12])<<8) + raw[13])/gyro_lsb_deg; }
+	float accX() { return float((static_cast<int16_t>(agraw[0])<<8) + agraw[1])/accel_lsb_mg; }
+	float accY() { return float((static_cast<int16_t>(agraw[2])<<8) + agraw[3])/accel_lsb_mg; }
+	float accZ() { return float((static_cast<int16_t>(agraw[4])<<8) + agraw[5])/accel_lsb_mg; }
+	float gyroX() { return float((static_cast<int16_t>(agraw[8])<<8) + agraw[9])/gyro_lsb_deg; }
+	float gyroY() { return float((static_cast<int16_t>(agraw[10])<<8) + agraw[11])/gyro_lsb_deg; }
+	float gyroZ() { return float((static_cast<int16_t>(agraw[12])<<8) + agraw[13])/gyro_lsb_deg; }
+
+	// in mu Tesra
+	float compassX() { return ((int16_t(magraw[3])<<8) | magraw[2])*0.3; }
+	float compassY() { return ((int16_t(magraw[1])<<8) | magraw[0])*0.3; }
+	float compassZ() { return -((int16_t(magraw[5])<<8) | magraw[4])*0.3; }
 };
-
 
 #endif /* INVS_MPU9150_H_ */

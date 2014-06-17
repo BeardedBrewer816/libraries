@@ -115,10 +115,12 @@ RM := rm -rf
 -include MindSet/mdt/tgcd/win32/subdir.mk
 -include MindSet/mdt/tg/subdir.mk
 -include MindSet/subdir.mk
+-include MPU_9150/subdir.mk
 -include MCP23S1x/subdir.mk
 -include KeyMatrix/subdir.mk
 -include IOExpander_MCP2301x/subdir.mk
 -include IOExpander_MCP2300x/subdir.mk
+-include HMC_5843/subdir.mk
 -include HMC5843/subdir.mk
 -include HC595/subdir.mk
 -include GPS/subdir.mk
@@ -145,7 +147,6 @@ RM := rm -rf
 -include ChLCD_HC595/subdir.mk
 -include CapacitiveSense/subdir.mk
 -include CameraC328R/subdir.mk
--include BMP085/ATmega328/subdir.mk
 -include BMP085/subdir.mk
 -include Arduino_hardware_libraries/Wire/utility/subdir.mk
 -include Arduino_hardware_libraries/Wire/subdir.mk
@@ -179,6 +180,7 @@ RM := rm -rf
 -include Adafruit_GFX_modified/subdir.mk
 -include Adafruit_CC3000/utility/subdir.mk
 -include Adafruit_CC3000/subdir.mk
+-include Adafruit_ADXL345/subdir.mk
 -include AP_GPS/subdir.mk
 -include APM_Compass/subdir.mk
 -include AFMotor/subdir.mk

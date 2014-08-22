@@ -10,17 +10,26 @@
 //	boolean begin(int axcfg, int axhpf, int gycfg);
 boolean MPU9150::begin(int axrange, int axhpf, int gyrange) {
 	accessMPU();
-	if ( readRegister(0x75) == 0x68 ) {
+	int c;
+	Serial.println("I2C MPU address selected. Now reading register.");
+	if ( (c = readRegister(0x75)) == 0x68 ) {
+		Serial.println("register 0x75 matched 0x68.");
 		// wake up AX, GY
 		wakeUp();
+		Serial.println("waken up.");
 		accessAKM();
+		Serial.println("AKM accessed.");
 		if ( readRegister(0x00) != AKM_WIA_ID )
 			return false;
+		Serial.println("AKM_WIA_ID matched.");
 		readRegister(AKM_REG_ASAX, magadj, 3);
 		configAccel(axrange,axhpf);
 		configGyro(gyrange);
+		Serial.println("All done.");
 		return true;
 	}
+	Serial.print("read register 0x75 failed: ");
+	Serial.println(c, HEX);
 	return false;
 }
 

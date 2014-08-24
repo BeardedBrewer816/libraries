@@ -13,7 +13,7 @@
 
 class GPS {
 	Stream & port;
-	uint8_t _onoff;
+	uint8_t pin_onoff;
 public:
 	float _utc, _date;
 	float _latitude, _longitude, _altitude;
@@ -21,7 +21,7 @@ public:
 
 public:
 	GPS(Stream & stream, uint8_t onoff = 0xff) : port(stream) {
-		_onoff = onoff;
+		pin_onoff = onoff;
 		port.setTimeout(1000);
 	}
 
@@ -41,14 +41,14 @@ public:
 	virtual void flush() { return port.flush(); }
 
 	bool begin();
-	bool start(void);
+//	bool start(void);
 
 	unsigned long catchMessage(unsigned long timeout);
 	bool readRMC();
 	bool readGGA();
 	bool readGSA();
 	bool skipLine() { return port.find("\n"); }
-	bool getSentence(const char msg[6], char * result, unsigned long timeout = 1000);
+	size_t readLine(const char t, char buf[], size_t limit) { return readStrUntil(t,buf,limit); }
 
 	float latitude(float & );
 	float longitude(float & );

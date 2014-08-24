@@ -1,6 +1,6 @@
 /*
  *  BMP085.cpp
- *  
+ *  for Bosch BMP085 barometic pressure sensor
  *
  *  Created by Sin on 10/04/25.
  *  Copyright 2010 Kyutech. All rights reserved.
@@ -9,11 +9,11 @@
 
 #include <Ardunino.h>
 #include <Wire.h>
-#include "BoschBMP085.h"
+#include "BMP085.h"
 
 
 // Read 1 byte from the BMP085 at 'address'
-char BoschBMP085::read(unsigned char address)
+char BMP085::read(unsigned char address)
 {
   unsigned char data;
 
@@ -31,9 +31,9 @@ char BoschBMP085::read(unsigned char address)
 // Read 2 bytes from the BMP085
 // First byte will be from 'address'
 // Second byte will be from 'address'+1
-int BoschBMP085::readInt(unsigned char address)
+uint16_t BMP085::readInt(unsigned char address)
 {
-  unsigned char msb, lsb;
+  uint16_t result;
 
   Wire.beginTransmission(BMP085_ADDRESS);
   Wire.write(address);
@@ -42,16 +42,17 @@ int BoschBMP085::readInt(unsigned char address)
   Wire.requestFrom(BMP085_ADDRESS, (uint8_t) 2);
   while(Wire.available()<2)
     ;
-  msb = Wire.read();
-  lsb = Wire.read();
+  result = Wire.read();
+  result <<= 8;
+  result |= (uint8_t)Wire.read();
 
-  return int(msb)<<8 | lsb;
+  return result;
 }
 
 // Stores all of the bmp085's calibration values into global variables
 // Calibration values are required to calculate temp and pressure
 // This function should be called at the beginning of the program
-void BoschBMP085::calibrate()
+void BMP085::calibrate()
 {
   ac1 = readInt(0xAA);
   ac2 = readInt(0xAC);
@@ -68,11 +69,11 @@ void BoschBMP085::calibrate()
 
 // Calculate temperature given ut.
 // Value returned will be in units of 0.1 deg C
-short BoschBMP085::temperature()
+int16_t BMP085::calc_temperature()
 {
   long x1, x2;
 
-  x1 = (((long)ut - (long)ac6)*(long)ac5) >> 15;
+  x1 = (((long)value_UT - (long)ac6)*(long)ac5) >> 15;
   x2 = ((long)mc << 11)/(x1 + md);
   b5 = x1 + x2;
 
@@ -83,7 +84,7 @@ short BoschBMP085::temperature()
 // calibration values must be known
 // b5 is also required so bmp085GetTemperature(...) must be called first.
 // Value returned will be pressure in units of Pa.
-long BoschBMP085::pressure()
+int32_t BMP085::calc_pressure()
 {
   long x1, x2, x3, b3, b6, p;
   unsigned long b4, b7;
@@ -101,7 +102,7 @@ long BoschBMP085::pressure()
   x3 = ((x1 + x2) + 2)>>2;
   b4 = (ac4 * (unsigned long)(x3 + 32768))>>15;
 
-  b7 = ((unsigned long)(up - b3) * (50000>>OSS));
+  b7 = ((unsigned long)(value_UP - b3) * (50000>>OSS));
   if (b7 < 0x80000000)
     p = (b7<<1)/b4;
   else
@@ -117,10 +118,8 @@ long BoschBMP085::pressure()
 
 
 // Read the uncompensated temperature value
-unsigned int BoschBMP085::readUT()
+void BMP085::requestTemperature()
 {
-//  unsigned int ut;
-
   // Write 0x2E into Register 0xF4
   // This requests a temperature reading
   Wire.beginTransmission(BMP085_ADDRESS);
@@ -128,20 +127,24 @@ unsigned int BoschBMP085::readUT()
   Wire.write(0x2E);
   Wire.endTransmission();
 
+  waitOnRequest = 5; // required wait in millisec
+  status = MEASURE_TEMP;
+}
+
+int16_t BMP085::getTemperature() {
   // Wait at least 4.5ms
-  delay(5);
+//  delay(5);
 
   // Read two bytes from registers 0xF6 and 0xF7
-  ut = readInt(0xF6);
-  return ut;
+  value_UT = readInt(0xF6);
+  temperature = calc_temperature();
+  status = IDLE;
+  return temperature;
 }
 
 // Read the uncompensated pressure value
-unsigned long BoschBMP085::readUP()
-{
-  unsigned char msb, lsb, xlsb;
-  //unsigned long up = 0;
-  up = 0;
+void BMP085::requestPressure(uint8_t ss) {
+	OSS = ss;
 
   // Write 0x34+(OSS<<6) into register 0xF4
   // Request a pressure reading w/ oversampling setting
@@ -151,7 +154,14 @@ unsigned long BoschBMP085::readUP()
   Wire.endTransmission();
 
   // Wait for conversion, delay time dependent on OSS
-  delay(2 + (3<<OSS));
+  waitOnRequest = (2 + (3<<OSS));
+  status = MEASURE_PRESS;
+}
+
+uint32_t BMP085::getPressure() {
+  unsigned char msb, lsb, xlsb;
+  //unsigned long up = 0;
+  value_UP = 0;
 
   // Read register 0xF6 (MSB), 0xF7 (LSB), and 0xF8 (XLSB)
   Wire.beginTransmission(BMP085_ADDRESS);
@@ -166,7 +176,17 @@ unsigned long BoschBMP085::readUP()
   lsb = Wire.read();
   xlsb = Wire.read();
 
-  up = (((unsigned long) msb << 16) | ((unsigned long) lsb << 8) | (unsigned long) xlsb) >> (8-OSS);
+  value_UP = (((unsigned long) msb << 16) | ((unsigned long) lsb << 8) | (unsigned long) xlsb) >> (8-OSS);
 
-  return up;
+  pressure = calc_pressure();
+  status = IDLE;
+  return pressure;
+}
+
+void BMP085::getResult() {
+	if (status == MEASURE_TEMP) {
+		getTemperature();
+	} else if ( status == MEASURE_PRESS ) {
+		getPressure();
+	}
 }

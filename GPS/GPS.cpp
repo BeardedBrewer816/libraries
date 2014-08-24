@@ -8,25 +8,27 @@
 #include <GPS.h>
 
 bool GPS::begin(void) {
-	if ( _onoff != 0xff ) {
-		pinMode(_onoff, OUTPUT);
-		digitalWrite(_onoff, HIGH);
+	if ( pin_onoff != 0xff ) {
+		pinMode(pin_onoff, OUTPUT);
+		digitalWrite(pin_onoff, HIGH);
 	}
 	return true;
 }
 
+/*
 bool GPS::start(void) {
-	if ( _onoff == 0xff )
+	if ( pin_onoff == 0xff )
 		return true;
 	delay(200);
 	if ( port.available() > 6 )
 		return true;
-	digitalWrite(_onoff, LOW);
+	digitalWrite(pin_onoff, LOW);
 	delay(1200);
-	digitalWrite(_onoff, HIGH);
+	digitalWrite(pin_onoff, HIGH);
 	delay(1200);
 	return port.available() > 6;
 }
+*/
 
 bool GPS::readGGA() {
 //	GGA (474741): 065048.000,3335.5119,N,13021.3472,E,1,05,7.2,48.1,M,27.3,M,,0000

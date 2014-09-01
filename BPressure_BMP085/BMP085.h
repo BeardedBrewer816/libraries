@@ -61,9 +61,10 @@ public:
 
 	void requestTemperature();
 	void requestPressure(uint8_t ss = 0);
+	int16_t readTemperature();
+	int32_t readPressure();
 	uint16_t waitMillis() { return waitOnRequest; }
-	void getResult();
-	int16_t getTemperature();
-	uint32_t getPressure();
+	void getTemperature();
+	void getPressure();
 };
 

@@ -131,17 +131,6 @@ void BMP085::requestTemperature()
   status = MEASURE_TEMP;
 }
 
-int16_t BMP085::getTemperature() {
-  // Wait at least 4.5ms
-//  delay(5);
-
-  // Read two bytes from registers 0xF6 and 0xF7
-  value_UT = readInt(0xF6);
-  temperature = calc_temperature();
-  status = IDLE;
-  return temperature;
-}
-
 // Read the uncompensated pressure value
 void BMP085::requestPressure(uint8_t ss) {
 	OSS = ss;
@@ -158,7 +147,18 @@ void BMP085::requestPressure(uint8_t ss) {
   status = MEASURE_PRESS;
 }
 
-uint32_t BMP085::getPressure() {
+int16_t BMP085::readTemperature() {
+  // Wait at least 4.5ms
+//  delay(5);
+
+  // Read two bytes from registers 0xF6 and 0xF7
+  value_UT = readInt(0xF6);
+  temperature = calc_temperature();
+  status = IDLE;
+  return temperature;
+}
+
+int32_t BMP085::readPressure() {
   unsigned char msb, lsb, xlsb;
   //unsigned long up = 0;
   value_UP = 0;
@@ -183,10 +183,14 @@ uint32_t BMP085::getPressure() {
   return pressure;
 }
 
-void BMP085::getResult() {
-	if (status == MEASURE_TEMP) {
-		getTemperature();
-	} else if ( status == MEASURE_PRESS ) {
-		getPressure();
-	}
+void BMP085::getPressure() {
+	requestPressure();
+	delay(waitOnRequest);
+	readPressure();
+}
+
+void BMP085::getTemperature() {
+	requestTemperature();
+	delay(waitOnRequest);
+	readTemperature();
 }

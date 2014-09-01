@@ -52,34 +52,107 @@ void T5403::begin(void)
 	getData(T5403_C8, &c8);  //Retrieve C8 from device
 }
 	
+void T5403::requestTemperature() {
+	// Create variables for conversion and raw data.
+	// Start temperature measurement
+
+	sendCommand(T5403_COMMAND_REG, COMMAND_GET_TEMP);
+	// Wait 5ms for conversion to complete
+	// sensorWait(5);
+	waitOnRequest = 5;
+}
+
+int16_t T5403::readTemperature(temperature_units units) {
+	int16_t temperature_raw;
+
+	// Receive raw temp value from device.
+	getData(T5403_DATA_REG, &temperature_raw);
+	// Perform calculation specified in data sheet
+	temperature = (((((int32_t) c1 * temperature_raw) >> 8)
+						 + ((int32_t) c2 << 6)) * 100) >> 16;
+
+	// If Fahrenheit is selected return the temperature converted to F
+	if ( units == FAHRENHEIT ) {
+		temperature = ((temperature * 9) / 5) + 3200;
+		return temperature;
+	}
+	// If Celsius is selected return the temperature converted to C
+	else if ( units == CELSIUS ) {
+		return (int16_t) temperature;
+	}
+
+}
+
 int16_t T5403::getTemperature(temperature_units units)
 // Return a temperature reading.
 {
-	// Create variables for conversion and raw data. 
-	int16_t temperature_raw; 
-	int32_t temperature_actual; 
-	
+	requestTemperature();
+	delay(waitOnRequest);
+	readTemperature(uints);
+}
+
+void T5403::requestPressure() {
+	// Create variables for conversion and raw data.
 	// Start temperature measurement
-	sendCommand(T5403_COMMAND_REG, COMMAND_GET_TEMP); 
+	sendCommand(T5403_COMMAND_REG, COMMAND_GET_TEMP);
 	// Wait 5ms for conversion to complete
-	sensorWait(5); 
+	//sensorWait(5);
+	waitOnRequest = 5;
+
+}
+
+int32_t T5403::readPressure() {
+	// Create variables for conversion and raw data.
+	int16_t temperature_raw;
+	uint16_t pressure_raw;
+
 	// Receive raw temp value from device.
-	getData(T5403_DATA_REG, &temperature_raw);		
-	// Perform calculation specified in data sheet
-	temperature_actual = (((((int32_t) c1 * temperature_raw) >> 8) 
-						 + ((int32_t) c2 << 6)) * 100) >> 16;
+	getData(T5403_DATA_REG, &temperature_raw);
 
+	// Load measurement noise level into command along with start command bit.
+	commanded_precision = (commanded_precision << 3)|(0x01);
+	// Start pressure measurement
+	sendCommand(T5403_COMMAND_REG, commanded_precision);
 
-	// If Fahrenheit is selected return the temperature converted to F
-	if(units == FAHRENHEIT){
-		temperature_actual = ((temperature_actual * 9) / 5) + 3200;
-		return temperature_actual;
+	//Select delay time based on precision level selected.
+	switch(commanded_precision){
+		case MODE_LOW:
+		{
+			sensorWait(5); //  Wait 5ms for conversion to complete
+			break;
 		}
-		
-	// If Celsius is selected return the temperature converted to C	
-	else if(units == CELSIUS){
-		return (int16_t) temperature_actual;
-	}
+		case MODE_STANDARD:
+		{
+			sensorWait(11); //  Wait 11 ms for conversion to complete
+			break;
+		}
+		case MODE_HIGH:{
+			sensorWait(19); //  Wait 19 ms for conversion to complete
+			break;
+		}
+		case MODE_ULTRA:{
+			sensorWait(67); //  Wait 67 ms for conversion to complete
+			break;
+		}
+	};
+
+	//  Receive raw pressure value from device.
+	getData(T5403_DATA_REG, (int16_t*)&pressure_raw);
+
+	// Create variables to hold calculated pressure and working variables for
+	// calculations.
+	int32_t pressure, s, o;
+
+	// Calculations come from application note.
+	s = (((((int32_t) c5 * temperature_raw)  >> 15) * temperature_raw) >> 19)
+			+ c3 + (((int32_t) c4 * temperature_raw) >> 17);
+
+	o = (((((int32_t) c8 * temperature_raw) >> 15) * temperature_raw) >> 4)
+			+ (((int32_t) c7 * temperature_raw) >> 3) + ((int32_t)c6 * 0x4000);
+
+	pressure = (s * pressure_raw + o) >> 14;
+
+	return pressure;
 }
 
 int32_t T5403::getPressure(uint8_t commanded_precision)

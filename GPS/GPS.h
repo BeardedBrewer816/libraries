@@ -9,7 +9,7 @@
 #define GPS_H_
 
 #include <Arduino.h>
-#include <SoftwareSerial.h>
+//#include <SoftwareSerial.h>
 
 class GPS {
 	Stream & port;

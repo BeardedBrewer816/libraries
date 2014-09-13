@@ -82,6 +82,7 @@ public:
     Sensirion(uint8_t dataPin, uint8_t clockPin);
     uint8_t calculate(float *temp, float *humi, float *dew);
     bool measure(uint8_t cmd, bool wait = true);
+    bool measure(void) { return measure(TEMP, true) && measure(HUMI, true); }
     bool requestTemp() { return measure(TEMP, false); }
     bool requestHumi() { return measure(HUMI, false); }
     bool waitReady();

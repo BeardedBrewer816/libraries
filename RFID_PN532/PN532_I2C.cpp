@@ -12,7 +12,9 @@
 #endif
 #include "PN532_I2C.h"
 
-#include "Tools.h"
+#ifdef DEBUG
+//#include "Tools.h"
+#endif
 
 #define PREAMBLE      (0x00)
 #define STARTCODE_1   (0x00)
@@ -921,6 +923,7 @@ byte PN532::mifare_WriteAccessConditions(uint8_t sector, uint32_t acc, const uin
   uint8_t data[16];
   memcpy(data, keya, 6);
   memcpy(data+10, keyb, 6);  
+  acc &= 0x0fff;
   acc |= acc<<12;
   acc ^= 0x00000fff;
   data[8] = acc>>16 & 0xff;
@@ -945,7 +948,13 @@ byte PN532::mifare_WriteAccessConditions(uint8_t sector, uint32_t acc, const uin
 }
 
 uint32_t PN532::mifare_ReadAccessConditions(uint8_t sector, uint8_t * data) {
-  return mifare_ReadBlock((sector+1)*4-1, data);
+	uint32_t acc;
+	if ( mifare_ReadBlock((sector+1)*4-1, data) != 16 ) {
+		return 0;
+	}
+	acc = (uint32_t(data[8]) << 16) | (uint32_t(data[7])<<8) | (uint32_t(data[6]));
+	acc >>= 12;
+	return acc;
 }
 
 

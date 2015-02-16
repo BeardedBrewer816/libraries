@@ -1,18 +1,18 @@
 /*
- * Tools.cpp
+ * StreamUtils.cpp
  *
  *  Created on: 2014/04/10
  *      Author: sin
  */
 
-#include "Tools.h"
+#include "StreamUtils.h"
 
 size_t printBytes(Print & prn, const uint8_t * p, const uint8_t length, const uint8_t base, const char sep) {
 	size_t n = 0;
 	int bit, val;
 	int i = 0;
 	while ( i < length ) {
-		if ( base == 256 && isprint(*p) ) {
+		if ( base == 0 && isprint(*p) ) {
 			n += prn.print((char) *p);
 		} else if ( base == 2 ) {
 			val = *p;

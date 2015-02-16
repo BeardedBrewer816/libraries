@@ -211,10 +211,10 @@ public:
 	byte mifare_AuthenticateBlock(word blockNumber, const byte * keyData);
 	byte mifare_ReadBlock(uint8_t blockNumber, uint8_t * data);
 	byte mifare_WriteBlock(uint8_t blockNumber, uint8_t * data);
-  byte mifare_WriteAccessConditions(uint8_t sector, uint32_t acc, const uint8_t keya[6], const uint8_t keyb[6]);
-  uint32_t mifare_ReadAccessConditions(uint8_t sector, uint8_t * data);
+	byte mifare_WriteAccessConditions(uint8_t sector, uint32_t acc, const uint8_t keya[6], const uint8_t keyb[6]);
+	uint32_t mifare_ReadAccessConditions(uint8_t sector, uint8_t * data);
 
-  boolean InCommunicateThru(const byte * data, const byte len);
+	boolean InCommunicateThru(const byte * data, const byte len);
 	byte getCommunicateThruResponse(byte * data);
 
 	//	byte felica_DataExchange(const byte cmd, const byte * data, const byte len);
@@ -230,8 +230,8 @@ public:
 	byte felica_ReadBlocksWithoutEncryption(byte * resp, const word servcode,
 			const byte blknum, const word blklist[]);
   
-  // utility function
-  static void printAccessBits(uint8_t trailer[16]);
+	// utility function
+	static void printAccessBits(uint8_t trailer[16]);
 
 };
 
